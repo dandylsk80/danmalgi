@@ -357,7 +357,7 @@ function head(o){
   '<link rel="preconnect" href="https://cdn.jsdelivr.net">',
   '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
   '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">',
-  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&display=swap">',
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Hahmlet:wght@500;700;800;900&family=Nanum+Brush+Script&family=Nanum+Myeongjo:wght@400;700;800&display=swap">',
   o.jsonld?('<script type="application/ld+json">'+JSON.stringify(o.jsonld)+'<\/script>'):'',
   '<style>'+CSS+'</style>'
   ].join("");
@@ -436,6 +436,122 @@ article p.lead{font-size:19px;color:var(--ink);font-weight:500}
 .near a{font-size:14px;padding:7px 13px;border:1px solid var(--line);border-radius:999px}
 .near a:hover{border-color:var(--clay);color:var(--clay)}
 @media(max-width:720px){.two{grid-template-columns:1fr;gap:22px}.hero{padding:48px 0 30px}}
+
+/* ===== 조선 × 뉴트로 홈 ===== */
+:root{--juchil:#B6322A;--gunchung:#274A78;--cheong:#2E6B5E;--chija:#D7A41C;--meok:#1C1814;--hanji:#F8F4EC;--hanji2:#EFE7D6}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes sealIn{0%{opacity:0;transform:rotate(-18deg) scale(1.5)}60%{opacity:1}100%{opacity:1;transform:rotate(-8deg) scale(1)}}
+@keyframes mqA{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes mqB{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+/* 한지 결 텍스처 (아주 옅게) */
+.jhome{position:relative}
+.jhome::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")}
+
+/* 단청 띠 */
+.danband{height:7px;background:repeating-linear-gradient(90deg,var(--juchil) 0 16px,var(--gunchung) 16px 32px,var(--cheong) 32px 48px,var(--chija) 48px 64px,var(--hanji) 64px 72px)}
+
+/* HERO */
+.jhero{position:relative;padding:78px 0 30px;overflow:hidden}
+.jbadge{display:inline-flex;align-items:center;gap:9px;font-family:'Gowun Batang',serif;font-size:14px;letter-spacing:.16em;color:var(--juchil);border:1.5px solid var(--juchil);padding:7px 15px;border-radius:999px;background:rgba(182,50,42,.05)}
+.jbadge::before{content:"";width:8px;height:8px;background:var(--juchil);transform:rotate(45deg)}
+.jhero h1{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:900;font-size:clamp(44px,9vw,104px);line-height:1.04;letter-spacing:-.02em;margin:24px 0 0;color:var(--meok)}
+.brush{position:relative;display:inline-block;color:var(--juchil)}
+.brushline{position:absolute;left:-2%;bottom:-.14em;width:104%;height:.46em;overflow:visible}
+.brushline path{stroke:var(--juchil);stroke-width:10;fill:none;stroke-linecap:round;stroke-dasharray:640;stroke-dashoffset:640;animation:draw 1.2s .45s forwards cubic-bezier(.6,.05,.2,1)}
+.jhero .jsub{margin-top:30px;font-family:'Gowun Batang',serif;font-size:clamp(17px,2.1vw,21px);line-height:1.85;color:#3A352B;max-width:33em}
+.jhero .jsub b{color:var(--meok);font-weight:700;border-bottom:2px solid var(--chija)}
+/* 낙관 도장 */
+.seal{position:absolute;top:84px;right:14px;width:104px;height:104px;border-radius:14px;background:var(--juchil);color:var(--hanji);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:rotate(-8deg);
+  font-family:'Nanum Myeongjo',serif;font-weight:800;font-size:30px;line-height:1;letter-spacing:.06em;
+  box-shadow:0 10px 26px -12px rgba(182,50,42,.6);animation:sealIn 1s .2s both}
+.seal::after{content:"";position:absolute;inset:7px;border:1.5px solid rgba(248,244,236,.7);border-radius:9px}
+.seal span{position:relative;z-index:2}
+.seal .en{font-family:'Gowun Batang',serif;font-weight:400;font-size:10px;letter-spacing:.22em;opacity:.85;margin-top:4px}
+@media(max-width:760px){.seal{width:78px;height:78px;font-size:22px;top:64px;right:0}}
+
+/* 검색 (뉴트로) */
+.jsearch{margin-top:38px;position:relative;max-width:560px}
+.jsearch input{width:100%;font-family:'Gowun Batang',serif;font-size:18px;padding:19px 22px;border:2.5px solid var(--meok);border-radius:3px;background:#FFFDF8;outline:none;box-shadow:6px 6px 0 var(--meok)}
+.jsearch input:focus{border-color:var(--juchil);box-shadow:6px 6px 0 var(--juchil)}
+.jsearch .results{position:absolute;left:0;right:0;top:70px;background:#fff;border:2px solid var(--meok);border-radius:3px;box-shadow:6px 6px 0 rgba(28,24,20,.18);max-height:340px;overflow:auto;display:none;z-index:6}
+.jsearch .results a{display:block;padding:13px 18px;border-bottom:1px solid var(--line);font-size:15px;font-family:'Gowun Batang',serif}
+.jsearch .results a:hover{background:var(--hanji2)}
+.jsearch .results a small{color:var(--muted)}
+.jhint{margin-top:14px;font-size:13.5px;color:var(--muted);font-family:'Gowun Batang',serif}
+
+/* 흐르는 띠 (마퀴) */
+.marquee{border-top:2px solid var(--meok);border-bottom:2px solid var(--meok);background:var(--meok);overflow:hidden;padding:14px 0}
+.marquee .track{display:flex;white-space:nowrap;width:max-content;animation:mqA 26s linear infinite;font-family:'Hahmlet',serif;font-weight:700;font-size:26px;color:var(--hanji)}
+.marquee .track span{padding:0 .7em;color:var(--hanji)}
+.marquee .track .dot{color:var(--chija)}
+
+/* 섹션 공통 */
+.jsec{padding:80px 0;border-bottom:1px solid var(--line)}
+.jkr{display:inline-block;font-family:'Gowun Batang',serif;font-size:13px;letter-spacing:.28em;color:var(--juchil);font-weight:700;margin-bottom:20px;padding-bottom:7px;border-bottom:2px solid var(--juchil)}
+.jh2{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:clamp(28px,4.6vw,46px);line-height:1.22;letter-spacing:-.02em;color:var(--meok);max-width:18em}
+.jbody{font-family:'Gowun Batang',serif;font-size:17px;line-height:1.95;color:#34302A}
+.jwhy-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:start;margin-top:30px}
+.jwhy-grid .jbody p{margin-bottom:16px}
+/* 창살 */
+.lattice{width:100%;max-width:300px;aspect-ratio:3/4;margin-left:auto;display:block}
+.lattice line{stroke:var(--meok);stroke-width:2;opacity:.85}
+.lattice .r{stroke:var(--juchil);stroke-width:3}
+
+/* 조각보형 단말기 카드 */
+.jhelp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:34px}
+.jcard{position:relative;border:2px solid var(--meok);border-radius:4px;padding:26px 24px 24px;background:#FFFDF8;box-shadow:6px 6px 0 var(--meok);transition:transform .25s,box-shadow .25s}
+.jcard:hover{transform:translate(-3px,-3px);box-shadow:9px 9px 0 var(--juchil)}
+.jcard .cap{height:8px;border-radius:4px;width:54px;margin-bottom:18px}
+.jcard h3{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:23px;color:var(--meok);margin-bottom:10px}
+.jcard p{font-family:'Gowun Batang',serif;font-size:15.5px;line-height:1.85;color:#403B33}
+.c-juchil{background:var(--juchil)}.c-gunchung{background:var(--gunchung)}.c-cheong{background:var(--cheong)}.c-chija{background:var(--chija)}
+
+/* 차례(절차) */
+.jsteps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:36px;counter-reset:step}
+.jstep{position:relative;padding-top:18px;border-top:3px solid var(--meok)}
+.jstep .num{font-family:'Hahmlet',serif;font-weight:900;font-size:40px;color:var(--juchil);line-height:1}
+.jstep h4{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:19px;margin:10px 0 8px;color:var(--meok)}
+.jstep p{font-family:'Gowun Batang',serif;font-size:14.5px;line-height:1.8;color:#403B33}
+
+/* 세로쓰기 인용 */
+.vquote{display:flex;align-items:center;justify-content:center;gap:34px;padding:78px 0;background:var(--meok);border-top:2px solid var(--meok)}
+.vquote .vt{writing-mode:vertical-rl;font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:clamp(26px,4vw,40px);line-height:2.1;letter-spacing:.12em;color:var(--hanji)}
+.vquote .vt em{color:var(--chija);font-style:normal}
+.vquote .vseal{writing-mode:vertical-rl;background:var(--juchil);color:var(--hanji);font-family:'Nanum Myeongjo',serif;font-weight:800;padding:18px 12px;border-radius:8px;letter-spacing:.1em;font-size:20px}
+
+/* 조각보 시도 그리드 */
+.jogak{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:96px;grid-auto-flow:dense;gap:12px;margin-top:34px}
+.jpatch{position:relative;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;border-radius:5px;overflow:hidden;color:#fff;
+  font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;border:2px solid var(--meok);transition:transform .22s,box-shadow .22s}
+.jpatch .jk{font-size:21px;line-height:1;position:relative;z-index:2}
+.jpatch .jg{font-family:'Gowun Batang',serif;font-weight:400;font-size:12px;opacity:0;transform:translateY(6px);transition:.22s;margin-top:6px;position:relative;z-index:2}
+.jpatch:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--meok)}
+.jpatch:hover .jg{opacity:.95;transform:none}
+.jpatch::after{content:"";position:absolute;right:-18px;top:-18px;width:64px;height:64px;border:8px solid rgba(255,255,255,.16);border-radius:50%}
+.jpatch.big{grid-row:span 2}
+.p-juchil{background:var(--juchil)}.p-gunchung{background:var(--gunchung)}.p-cheong{background:var(--cheong)}.p-chija{background:var(--chija);color:var(--meok)}.p-meok{background:var(--meok)}.p-clay{background:var(--clay)}
+
+/* 마무리 낙관 */
+.jclose{text-align:center;padding:84px 0}
+.jclose .bigseal{width:120px;height:120px;margin:0 auto 26px;border-radius:16px;background:var(--juchil);color:var(--hanji);display:flex;align-items:center;justify-content:center;font-family:'Nanum Myeongjo',serif;font-weight:800;font-size:40px;letter-spacing:.08em;transform:rotate(-6deg);box-shadow:0 12px 30px -14px rgba(182,50,42,.6);position:relative}
+.jclose .bigseal::after{content:"";position:absolute;inset:9px;border:2px solid rgba(248,244,236,.65);border-radius:10px}
+.jclose .ct{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:clamp(26px,4.4vw,42px);color:var(--meok);line-height:1.3;max-width:16em;margin:0 auto}
+.jclose .cb{font-family:'Gowun Batang',serif;font-size:17px;color:#403B33;margin-top:18px}
+.jclose a.go{display:inline-block;margin-top:30px;font-family:'Hahmlet',serif;font-weight:800;font-size:17px;color:#fff;background:var(--meok);padding:16px 30px;border-radius:3px;box-shadow:6px 6px 0 var(--juchil);transition:transform .2s,box-shadow .2s}
+.jclose a.go:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--juchil)}
+
+@media(max-width:760px){
+  .jwhy-grid{grid-template-columns:1fr;gap:26px}.lattice{margin:0 auto;max-width:240px}
+  .jhelp-grid{grid-template-columns:1fr}.jsteps{grid-template-columns:1fr 1fr;gap:24px}
+  .jogak{grid-template-columns:repeat(2,1fr);grid-auto-rows:88px}
+  .vquote{gap:20px;padding:56px 0}
+}
 `;
 
 function shell(o, body){
@@ -453,41 +569,89 @@ function shell(o, body){
 
 // ---------- 메인 페이지 ----------
 function homePage(){
-  const chips = SIDOS.map(s=>"<a href=\"/find?q="+encodeURIComponent(s)+"\">"+esc(s)+"</a>").join("");
+  const pal=["p-juchil","p-gunchung","p-cheong","p-chija","p-meok","p-clay"];
+  const patches=SIDOS.map(function(s,i){
+    return "<a class='jpatch "+pal[i%pal.length]+(i%5===0?" big":"")+" reveal' style='transition-delay:"+(i*35)+"ms' href='/find?q="+encodeURIComponent(s)+"'><span class='jk'>"+esc(s)+"</span><span class='jg'>안내 보기 →</span></a>";
+  }).join("");
+  const help=[
+   ["c-juchil","유선 단말기","계산대에 자리 잡고 든든하게. 손님이 카운터로 모이는 가게라면, 끊김 없는 유선이 가장 마음 편한 선택입니다."],
+   ["c-gunchung","무선 단말기","테이블로, 문 앞으로, 행사장으로. 충전해 두면 매장 어디서든 손님을 기다리게 하지 않고 결제를 받습니다."],
+   ["c-cheong","포스","주문과 매출, 마감까지 한 화면에. 메뉴가 많거나 회전이 빠른 가게의 하루를 한결 단정하게 정리해 줍니다."],
+   ["c-chija","간편결제","지갑 대신 휴대폰을 꺼내는 손님까지. 받을 수 있는 길을 넓혀 두면 어떤 손님도 결제 앞에서 멈칫하지 않습니다."]
+  ].map(function(c,i){return "<div class='jcard reveal' style='transition-delay:"+(i*70)+"ms'><div class='cap "+c[0]+"'></div><h3>"+c[1]+"</h3><p>"+c[2]+"</p></div>";}).join("");
+  const steps=[
+   ["一","상담","매장이 어디에 있고 무엇을 파는지, 그 한마디면 충분합니다. 전화나 문자로 가볍게 시작하세요."],
+   ["二","가맹·서류","낯선 가맹 신청과 서류는 옆에서 함께 정리합니다. 외울 필요도, 헤맬 필요도 없습니다."],
+   ["三","설치·개통","동네로 찾아가 단말기를 들이고 결제가 잘 되는지 확인합니다. 연결 방식도 매장에 맞춰 잡아 드립니다."],
+   ["四","사용·사후","기본 사용법을 짚어 드리고, 쓰다가 막히는 순간에도 곁에 있습니다. 오래 쓰는 장비니까요."]
+  ].map(function(s,i){return "<div class='jstep reveal' style='transition-delay:"+(i*70)+"ms'><div class='num'>"+s[0]+"</div><h4>"+s[1]+"</h4><p>"+s[2]+"</p></div>";}).join("");
+  const seg="<span>유선</span><span class='dot'>◦</span><span>무선</span><span class='dot'>◦</span><span>포스</span><span class='dot'>◦</span><span>간편결제</span><span class='dot'>◦</span><span>전국 설치</span><span class='dot'>◦</span><span>우리 동네</span><span class='dot'>◦</span>";
+  const lattice="<svg class='lattice' viewBox='0 0 120 160' aria-hidden='true'><rect x='3' y='3' width='114' height='154' fill='none' stroke='#1C1814' stroke-width='3'/><line x1='34' y1='4' x2='34' y2='156'/><line x1='60' y1='4' x2='60' y2='156'/><line x1='86' y1='4' x2='86' y2='156'/><line x1='4' y1='42' x2='116' y2='42'/><line x1='4' y1='80' x2='116' y2='80'/><line x1='4' y1='118' x2='116' y2='118'/><rect class='r' x='46' y='62' width='28' height='36' fill='none'/><line class='r' x1='60' y1='42' x2='60' y2='62'/><line class='r' x1='60' y1='98' x2='60' y2='118'/></svg>";
+
   const body =
-   "<div class=wrap>"+
-   "<section class=hero>"+
-     "<span class=eyebrow><i></i>전국 · 우리 동네 결제 안내</span>"+
-     "<h1 class=serif>카드단말기,<br>동네에서 <span class=em>시작하다.</span></h1>"+
-     "<p class=sub>가격표도, 복잡한 비교표도 아닙니다. 우리 가게가 있는 자리에서부터, 어떤 단말기가 어울리는지 차분히 읽어 내려가는 안내서입니다.</p>"+
-     "<div class=search>"+
-       "<input id=q type=text autocomplete=off placeholder=\"동네 이름을 입력하세요 — 예: 역삼동, 수영구, 강릉시\">"+
-       "<div class=results id=res></div>"+
+   "<div class='jhome'>"+
+   "<div class='wrap'><section class='jhero'>"+
+     "<div class='seal'><span>단말</span><span class='en'>DANMALGI</span></div>"+
+     "<span class='jbadge'>방방곡곡 · 카드단말기 안내</span>"+
+     "<h1>카드단말기,<br>동네에서 <span class='brush'>시작하다<svg class='brushline' viewBox='0 0 300 24' preserveAspectRatio='none'><path d='M6 15 C 70 5,130 21,190 12 S 286 8, 296 15'/></svg></span></h1>"+
+     "<p class='jsub'>가격표를 들이밀거나 복잡한 비교표로 고르게 하지 않습니다. 우리 가게가 선 바로 그 자리에서, 어떤 단말기가 어울리는지 <b>차분히 읽어 내려가는 안내서</b>입니다. 유선과 무선, 포스와 간편결제 — 답은 늘 동네 안에 있습니다.</p>"+
+     "<div class='jsearch'>"+
+       "<input id='q' type='text' autocomplete='off' placeholder='우리 동네를 적어 보세요 — 예: 역삼동, 수영구, 강릉시'>"+
+       "<div class='results' id='res'></div>"+
      "</div>"+
-     "<p class=hint>시 · 군 · 구 · 읍 · 면 · 동, 어디에 있든 우리 동네 안내가 준비되어 있습니다.</p>"+
-   "</section>"+
+     "<p class='jhint'>시 · 군 · 구 · 읍 · 면 · 동, 어디에 있든 동네별 안내가 준비되어 있습니다.</p>"+
+   "</section></div>"+
 
-   "<section class=band>"+
-     "<div class=klabel>WHY LOCAL</div>"+
-     "<p class=lede>전국을 한 기준으로 재단하면, 정작 우리 가게엔 안 맞는 답이 나옵니다.</p>"+
-     "<div class=two>"+
-       "<p>같은 업종이라도 동네가 다르면 손님의 결제 습관이 다릅니다. 큰길가와 골목 안, 주거지와 상가, 이동이 잦은 곳과 자리에서 끝나는 곳 — 결제의 결은 그 자리에서 만들어집니다.</p>"+
-       "<p>그래서 시 · 도가 아니라 읍 · 면 · 동까지 좁혀서 봅니다. 우리 동네의 환경을 먼저 읽고, 거기에 맞춰 단말기를 고르는 것. 작아 보여도 결과를 가르는 차이입니다.</p>"+
+   "<div class='danband'></div>"+
+   "<div class='marquee'><div class='track'>"+seg+seg+"</div></div>"+
+
+   "<div class='wrap'><section class='jsec reveal'>"+
+     "<div class='jkr'>왜 동네인가</div>"+
+     "<h2 class='jh2'>전국을 한 자로 재면, 정작 우리 가게엔 맞지 않습니다.</h2>"+
+     "<div class='jwhy-grid'>"+
+       "<div class='jbody'>"+
+         "<p>같은 업종이라도 동네가 다르면 손님의 결제 습관이 다릅니다. 큰길가와 골목 안, 주거지와 상가, 잠깐 들르는 손님과 오래 머무는 손님 — 결제의 결은 언제나 그 자리에서 만들어집니다.</p>"+
+         "<p>그래서 우리는 시 · 도가 아니라 읍 · 면 · 동까지 좁혀서 봅니다. 동네의 공기를 먼저 읽고 거기에 맞춰 단말기를 고르는 일. 작아 보여도 하루의 장사를 가르는 차이가 됩니다.</p>"+
+         "<p>전국 방방곡곡, 어느 동네에 있든 우리 동네 이야기가 준비되어 있습니다. 거창한 약속 대신, 가장 가까운 자리에서 시작하는 안내를 건넵니다.</p>"+
+       "</div>"+
+       "<div>"+lattice+"</div>"+
      "</div>"+
-   "</section>"+
+   "</section></div>"+
 
-   "<section class=band>"+
-     "<div class=klabel>THE WAY</div>"+
-     "<p class=note>유선이냐 무선이냐, 포스냐 간편결제냐. 정답은 비교표가 아니라 가게의 움직임 안에 있습니다. 손님이 어디서 카드를 꺼내는지, 그 장면을 떠올리는 데서 모든 선택이 풀립니다.</p>"+
-   "</section>"+
+   "<div class='wrap'><section class='jsec reveal'>"+
+     "<div class='jkr'>무엇을 돕는가</div>"+
+     "<h2 class='jh2'>장비는 가게의 움직임을 따라야 합니다.</h2>"+
+     "<div class='jhelp-grid'>"+help+"</div>"+
+   "</section></div>"+
 
-   "<section class=band>"+
-     "<div class=klabel>FIND YOUR TOWN</div>"+
-     "<p class=lede thin>먼저, 시 · 도부터.</p>"+
-     "<div class=idx>"+chips+"</div>"+
-   "</section>"+
+   "<div class='vquote reveal'>"+
+     "<div class='vt'>장사의 시작은</div>"+
+     "<div class='vt'><em>결제</em>의 안심에서.</div>"+
+     "<div class='vseal'>店</div>"+
    "</div>"+
-   "<script>"+SEARCH_JS+"<\/script>";
+
+   "<div class='wrap'><section class='jsec reveal'>"+
+     "<div class='jkr'>어떻게 진행되나</div>"+
+     "<h2 class='jh2'>전화 한 통이면, 차례대로 풀립니다.</h2>"+
+     "<div class='jsteps'>"+steps+"</div>"+
+   "</section></div>"+
+
+   "<div class='wrap'><section class='jsec reveal'>"+
+     "<div class='jkr'>우리 동네부터</div>"+
+     "<h2 class='jh2'>당신의 동네를 눌러 보세요.</h2>"+
+     "<p class='jbody' style='margin:14px 0 0;color:#5b5448'>위 검색창에 동 이름을 적어도 좋고, 아래 조각보에서 시 · 도를 골라도 좋습니다.</p>"+
+     "<div class='jogak'>"+patches+"</div>"+
+   "</section></div>"+
+
+   "<div class='wrap'><div class='jclose reveal'>"+
+     "<div class='bigseal'>信</div>"+
+     "<div class='ct'>결제만큼은, 동네에서 가장 든든하게.</div>"+
+     "<div class='cb'>매장 위치와 업종만 알려 주세요. 거기서부터 가장 알맞은 그림을 함께 그리겠습니다.</div>"+
+     "<a class='go' href='tel:"+PHONE+"'>전화 상담 "+PHONE+"</a>"+
+   "</div></div>"+
+
+   "</div>"+
+   "<script>"+SEARCH_JS+REVEAL_JS+"<\/script>";
 
   return shell({
     title:"단말기닷컴 — 카드단말기, 동네에서 시작하다",
@@ -510,7 +674,13 @@ function go(){var v=q.value.trim();if(v.length<1){res.style.display='none';retur
  },120);
 }
 q.addEventListener('input',go);
-document.addEventListener('click',function(e){if(!e.target.closest('.search'))res.style.display='none';});
+document.addEventListener('click',function(e){if(!e.target.closest('.jsearch'))res.style.display='none';});
+`;
+const REVEAL_JS = `
+(function(){var els=document.querySelectorAll('.reveal');
+if(!('IntersectionObserver' in window)){for(var i=0;i<els.length;i++)els[i].classList.add('in');return;}
+var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:0.12,rootMargin:'0px 0px -40px 0px'});
+for(var i=0;i<els.length;i++)io.observe(els[i]);})();
 `;
 
 // ---------- 지역 페이지 ----------
