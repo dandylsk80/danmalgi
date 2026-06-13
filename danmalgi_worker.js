@@ -1017,11 +1017,12 @@ function findPage(qstr){
 
 // ---------- sitemap / robots / og ----------
 function sitemap(){
+  const today=isoDate(new Date());
   let u="<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
-  u+="<url><loc>"+SITE+"/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>";
-  u+="<url><loc>"+SITE+"/list</loc><changefreq>daily</changefreq><priority>0.6</priority></url>";
-  SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl) u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>"; });
-  for(const k in GUNGU_SLUGS){ u+="<url><loc>"+SITE+"/sigungu/"+GUNGU_SLUGS[k]+"</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>"; }
+  u+="<url><loc>"+SITE+"/</loc><lastmod>"+today+"</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>";
+  u+="<url><loc>"+SITE+"/list</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>";
+  SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl){ const m=isoDate(modifiedDate(hash("sido:"+s))); u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>"; } });
+  for(const k in GUNGU_SLUGS){ const m=isoDate(modifiedDate(hash("gungu:"+k))); u+="<url><loc>"+SITE+"/sigungu/"+GUNGU_SLUGS[k]+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; }
   for(const r of REGIONS){
     const mod=modifiedDate(hash(r.s));
     u+="<url><loc>"+SITE+"/r/"+r.s+"</loc><lastmod>"+isoDate(mod)+"</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>";
