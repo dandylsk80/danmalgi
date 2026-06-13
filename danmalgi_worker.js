@@ -14,7 +14,7 @@ const BRAND     = "단말기닷컴";
 const GOOGLE_VERIFY = "";   // Google Search Console (HTML 태그 방식)
 const NAVER_VERIFY  = "ed03a83fcbdc1b9019ec8dfc5b3d39c16ebf7e5d";   // 네이버 서치어드바이저
 const BING_VERIFY   = "";   // Bing Webmaster
-const DAUM_VERIFY   = "";   // 다음(카카오) 검색등록
+const DAUM_VERIFY   = "e409bcde9418b204b5031d53e9d3b2a20f8d24cfb4ce59445f0f3b332a0314c2:6aS0ois52M2zDbRxmlzo0Q==";   // 다음(카카오) 검색등록
 const GOOGLE_VERIFY_FILE = ""; // 파일 방식 쓸 때만, 예: "google1234abcd.html"
 // ============================================================
 
@@ -398,7 +398,7 @@ function head(o){
   GOOGLE_VERIFY?'<meta name="google-site-verification" content="'+GOOGLE_VERIFY+'">':'',
   NAVER_VERIFY?'<meta name="naver-site-verification" content="'+NAVER_VERIFY+'">':'',
   BING_VERIFY?'<meta name="msvalidate.01" content="'+BING_VERIFY+'">':'',
-  DAUM_VERIFY?'<meta name="Daum-Webmaster-Tool" content="'+DAUM_VERIFY+'">':'',
+  DAUM_VERIFY?'<meta name="DaumWebMasterTool" content="'+DAUM_VERIFY+'">':'',
   '<title>'+esc(o.title)+'</title>',
   '<meta name="description" content="'+esc(o.desc)+'">',
   '<meta name="robots" content="index,follow">',
@@ -1046,7 +1046,7 @@ function rssFeed(){
   });
   return x+'</channel></rss>';
 }
-const ROBOTS="User-agent: *\nAllow: /\nSitemap: "+SITE+"/sitemap.xml\n";
+const ROBOTS=(DAUM_VERIFY?"#DaumWebMasterTool:"+DAUM_VERIFY+"\n":"")+(NAVER_VERIFY?"#naver-site-verification:"+NAVER_VERIFY+"\n":"")+"User-agent: *\nAllow: /\nSitemap: "+SITE+"/sitemap.xml\n";
 const OG_SVG=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="#F8F4EC"/><rect x="40" y="40" width="1120" height="550" fill="none" stroke="#16130F" stroke-width="2"/><text x="80" y="270" font-family="serif" font-size="92" font-weight="800" fill="#16130F">카드단말기,</text><text x="80" y="380" font-family="serif" font-size="92" font-weight="800" fill="#16130F">동네에서 <tspan fill="#C0532E">시작하다</tspan></text><line x1="80" y1="430" x2="430" y2="430" stroke="#16130F" stroke-width="3"/><text x="80" y="478" font-family="sans-serif" font-size="30" fill="#3A352E">유선 · 무선 · 포스 · 간편결제 설치 안내</text><text x="1080" y="540" text-anchor="end" font-family="sans-serif" font-size="34" font-weight="800" fill="#16130F">단말기<tspan fill="#C0532E">닷컴</tspan></text></svg>`;
 
 function notFound(){
@@ -1062,7 +1062,7 @@ export default {
     const url=new URL(request.url);
     let path=decodeURIComponent(url.pathname);
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
-    if(path==="/robots.txt") return resp(ROBOTS,"text/plain; charset=UTF-8");
+    if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
     if(path==="/sitemap.xml") return resp(sitemap(),"application/xml; charset=UTF-8");
     if(path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed") return resp(rssFeed(),"application/rss+xml; charset=UTF-8");
