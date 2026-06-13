@@ -403,6 +403,7 @@ function head(o){
   '<meta name="description" content="'+esc(o.desc)+'">',
   '<meta name="robots" content="index,follow">',
   '<link rel="canonical" href="'+esc(o.url)+'">',
+  '<link rel="alternate" type="application/rss+xml" title="'+BRAND+' RSS" href="'+SITE+'/rss.xml">',
   '<meta property="og:type" content="'+(o.article?"article":"website")+'">',
   '<meta property="og:title" content="'+esc(o.title)+'">',
   '<meta property="og:description" content="'+esc(o.desc)+'">',
@@ -1024,6 +1025,27 @@ function sitemap(){
   }
   return u+"</urlset>";
 }
+function rfc822(d){ return d.toUTCString(); }
+function rssFeed(){
+  const now=new Date();
+  const list=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,50);
+  let x='<?xml version="1.0" encoding="UTF-8"?>';
+  x+='<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>';
+  x+='<title>'+BRAND+' — 카드단말기 동네별 안내</title>';
+  x+='<link>'+SITE+'/</link>';
+  x+='<atom:link href="'+SITE+'/rss.xml" rel="self" type="application/rss+xml"/>';
+  x+='<description>전국 시·군·구·읍·면·동 카드단말기 설치 안내. 유선·무선·포스·간편결제, 동네 상황에 맞춘 기준으로.</description>';
+  x+='<language>ko</language><lastBuildDate>'+rfc822(now)+'</lastBuildDate><ttl>1440</ttl>';
+  list.forEach(function(o){ const r=o.r, u=SITE+"/r/"+r.s, desc=fill(pick(DESC,hash(r.s)),r);
+    x+='<item>';
+    x+='<title><![CDATA['+r._dong+' 카드단말기 설치 안내 — '+r.n+']]></title>';
+    x+='<link>'+u+'</link><guid isPermaLink="true">'+u+'</guid>';
+    x+='<pubDate>'+rfc822(o.m)+'</pubDate>';
+    x+='<description><![CDATA['+desc+']]></description>';
+    x+='</item>';
+  });
+  return x+'</channel></rss>';
+}
 const ROBOTS="User-agent: *\nAllow: /\nSitemap: "+SITE+"/sitemap.xml\n";
 const OG_SVG=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="#F8F4EC"/><rect x="40" y="40" width="1120" height="550" fill="none" stroke="#16130F" stroke-width="2"/><text x="80" y="270" font-family="serif" font-size="92" font-weight="800" fill="#16130F">카드단말기,</text><text x="80" y="380" font-family="serif" font-size="92" font-weight="800" fill="#16130F">동네에서 <tspan fill="#C0532E">시작하다</tspan></text><line x1="80" y1="430" x2="430" y2="430" stroke="#16130F" stroke-width="3"/><text x="80" y="478" font-family="sans-serif" font-size="30" fill="#3A352E">유선 · 무선 · 포스 · 간편결제 설치 안내</text><text x="1080" y="540" text-anchor="end" font-family="sans-serif" font-size="34" font-weight="800" fill="#16130F">단말기<tspan fill="#C0532E">닷컴</tspan></text></svg>`;
 
@@ -1043,6 +1065,7 @@ export default {
     if(path==="/robots.txt") return resp(ROBOTS,"text/plain; charset=UTF-8");
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
     if(path==="/sitemap.xml") return resp(sitemap(),"application/xml; charset=UTF-8");
+    if(path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed") return resp(rssFeed(),"application/rss+xml; charset=UTF-8");
     if(path==="/og.svg") return resp(OG_SVG,"image/svg+xml");
     if(path==="/api/find"){
       const q=url.searchParams.get("q")||"";
