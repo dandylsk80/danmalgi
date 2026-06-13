@@ -299,6 +299,8 @@ const RLINE=[
  "{S} {D}의 손님은 생각보다 빠르게 변화에 익숙해집니다."
 ];
 // ---------- 지역 글 생성 ----------
+const ICON={s2:"📍",s10:"💳",s3:"🔌",s11:"🌐",s16:"🤝",s4:"📱",s12:"📊",s5:"🛠️",s17:"⏰",s6:"📋",s13:"🔁",s7:"🏪",s14:"🌱",s18:"🛡️",s8:"🧰",s15:"🧾",s19:"🏮"};
+function iconCls(id){return ["c-juchil","c-gunchung","c-cheong","c-chija"][hash(id)%4];}
 function buildArticle(R){
   const h = (id)=>esc(applySyn(pick(HEADS[id], hash(R.s+id)), R._syn));
   const compose = (id,kbase)=>{
@@ -312,19 +314,42 @@ function buildArticle(R){
     sents.splice(hash(R.s+id+"p2")%(sents.length+1),0,rl2);
     return esc(fill(sents.join(" "), R));
   };
-  let html = "";
-  html += "<p class=lead>"+compose("s1",2)+"</p>";
-  const order=["s2","s10","s3","s11","s16","s4","s12","s5","s17","s6","s13","s7","s14","s18","s8","s15","s19"];
-  for(const id of order){
-    html += "<h2>"+h(id)+"</h2><p>"+compose(id,2)+"</p>";
-  }
+  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+ICON[id]+"</span>"+h(id)+"</h2><p>"+compose(id,2)+"</p>";
+
+  const keybox="<div class='keybox'><div class='keybox-t'>📋 한눈에 보기</div><ul>"+
+    "<li>"+esc(fill("{D} 어디서나 유선·무선·포스·간편결제 설치를 안내합니다.",R))+"</li>"+
+    "<li>"+esc(fill("가격이나 수치가 아니라, {D}의 가게 상황에 맞춘 기준으로 고릅니다.",R))+"</li>"+
+    "<li>"+esc(fill("가맹 신청과 서류, 설치와 사후까지 {G} 한 흐름으로 이어집니다.",R))+"</li>"+
+    "</ul></div>";
+  const compare="<div class='compare'>"+
+    "<div class='cmp'><div class='cmp-ic c-juchil'>🔌</div><div class='cmp-t'>유선</div><div class='cmp-d'>"+esc(fill("한자리 계산대에 안정적입니다. {D}에서 손님이 카운터로 모이는 가게에 잘 맞습니다.",R))+"</div></div>"+
+    "<div class='cmp-vs'>VS</div>"+
+    "<div class='cmp'><div class='cmp-ic c-gunchung'>📶</div><div class='cmp-t'>무선</div><div class='cmp-d'>"+esc(fill("테이블·배달·이동에 자유롭습니다. {D}의 매장 어디서든 결제를 받습니다.",R))+"</div></div>"+
+    "</div>";
+  const flow="<div class='flow'>"+
+    "<div class='fstep'><span class='fic c-juchil'>📞</span><b>상담</b><i>위치·업종만</i></div><div class='farr'>→</div>"+
+    "<div class='fstep'><span class='fic c-gunchung'>📋</span><b>가맹·서류</b><i>대신 정리</i></div><div class='farr'>→</div>"+
+    "<div class='fstep'><span class='fic c-cheong'>🛠️</span><b>설치·개통</b><i>동네로 방문</i></div><div class='farr'>→</div>"+
+    "<div class='fstep'><span class='fic c-chija'>🤝</span><b>사용·사후</b><i>계속 곁에</i></div>"+
+    "</div>";
+  const callout="<div class='callout'><span class='co-ic'>💡</span><p>"+esc(fill(pick(RLINE,hash(R.s+"tip")),R))+"</p></div>";
+
+  let html = "<p class=lead>"+compose("s1",2)+"</p>";
+  html += keybox;
+  html += SEC("s2")+SEC("s10");
+  html += compare;
+  html += SEC("s3")+SEC("s11")+SEC("s16");
+  html += callout;
+  html += SEC("s4")+SEC("s12")+SEC("s5");
+  html += flow;
+  html += SEC("s17")+SEC("s6")+SEC("s13")+SEC("s7")+SEC("s14")+SEC("s18")+SEC("s8")+SEC("s15")+SEC("s19");
   // FAQ
-  html += "<h2>"+esc(applySyn(pick(HEADS.faq,hash(R.s+"faq")),R._syn))+"</h2><div class=faq>";
+  html += "<h2><span class='h2ic c-cheong'>❓</span>"+esc(applySyn(pick(HEADS.faq,hash(R.s+"faq")),R._syn))+"</h2><div class=faq>";
   faqItems(R).forEach((it,i)=>{
     html += "<details"+(i===0?" open":"")+"><summary>"+esc(it.q)+"</summary><p>"+esc(it.a)+"</p></details>";
   });
   html += "</div>";
-  html += "<h2>"+(hash(R.s+"end")%2?"마무리하며":"끝으로")+"</h2><p>"+compose("s9",2)+"</p>";
+  html += "<h2><span class='h2ic c-juchil'>✅</span>"+(hash(R.s+"end")%2?"마무리하며":"끝으로")+"</h2><p>"+compose("s9",2)+"</p>";
   return html;
 }
 function faqItems(R){
@@ -370,7 +395,7 @@ body{font-family:Pretendard,system-ui,sans-serif;background:var(--paper);color:v
 .serif{font-family:'Nanum Myeongjo',serif}
 a{color:inherit;text-decoration:none}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-.col{max-width:720px;margin:0 auto;padding:0 24px}
+.col{max-width:720px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
 /* header */
 .top{position:sticky;top:0;z-index:30;background:rgba(248,244,236,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .top .row{display:flex;align-items:center;justify-content:space-between;height:62px}
@@ -406,7 +431,7 @@ section.band{padding:64px 0;border-bottom:1px solid var(--line)}
 .idx a:hover{border-color:var(--ink);background:var(--ink);color:var(--paper)}
 .note{font-family:'Nanum Myeongjo',serif;font-size:clamp(20px,2.6vw,26px);line-height:1.7;color:var(--ink);max-width:24em}
 /* footer */
-footer{padding:50px 0 70px;color:var(--muted);font-size:14px}
+footer{padding:50px 0 70px;color:var(--muted);font-size:14px;position:relative;z-index:1}
 footer .fb{font-weight:800;font-size:18px;color:var(--ink)}
 footer b{color:var(--clay)}
 /* article */
@@ -448,7 +473,7 @@ article p.lead{font-size:19px;color:var(--ink);font-weight:500}
 @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 
 /* 한지 결 텍스처 (아주 옅게) */
-.jhome{position:relative}
+.jhome{position:relative;z-index:1}
 .jhome::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")}
 
@@ -552,6 +577,48 @@ article p.lead{font-size:19px;color:var(--ink);font-weight:500}
   .jogak{grid-template-columns:repeat(2,1fr);grid-auto-rows:88px}
   .vquote{gap:20px;padding:56px 0}
 }
+
+/* 배경 산수화 */
+.bgart{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.13;filter:blur(.7px) saturate(.92)}
+.bgart svg{width:100%;height:100%;display:block}
+
+/* 세부페이지 가독성 */
+.rpage article{background:rgba(251,249,243,.9);border:1px solid var(--line);border-radius:12px;padding:32px 36px 28px;box-shadow:0 16px 44px -24px rgba(22,19,15,.4)}
+.crumb2{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-family:'Gowun Batang',serif;font-size:13.5px;padding:24px 0 14px}
+.crumb2 a{color:#5b5448;padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,253,248,.8)}
+.crumb2 a:hover{color:var(--juchil);border-color:var(--juchil)}
+.crumb2 .cur{color:var(--meok);font-weight:700;padding:5px 12px;border-radius:999px;background:rgba(192,83,46,.12)}
+.crumb2 .sep{color:var(--muted);opacity:.55}
+.r-eyebrow{display:inline-flex;align-items:center;gap:6px;font-family:'Gowun Batang',serif;font-size:13px;color:var(--juchil);font-weight:700;background:rgba(192,83,46,.08);border:1px solid rgba(192,83,46,.25);padding:6px 13px;border-radius:999px}
+.meta2{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px;padding-bottom:24px;border-bottom:2px solid var(--line)}
+.meta2 span{display:inline-flex;align-items:center;gap:6px;font-family:'Gowun Batang',serif;font-size:13px;color:#5b5448;background:var(--hanji2);padding:6px 13px;border-radius:999px}
+.meta2 b{color:var(--meok);font-weight:700}
+.h2ic{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;font-size:18px;margin-right:11px;vertical-align:middle;box-shadow:2px 2px 0 rgba(28,24,20,.18)}
+.keybox{background:rgba(46,107,94,.07);border:1.5px solid rgba(46,107,94,.3);border-left:5px solid var(--cheong);border-radius:10px;padding:18px 22px;margin:24px 0 10px}
+.keybox-t{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:17px;color:var(--cheong);margin-bottom:10px}
+.keybox ul{list-style:none;margin:0;padding:0}
+.keybox li{position:relative;padding:5px 0 5px 26px;font-family:'Gowun Batang',serif;font-size:15.5px;line-height:1.7;color:#34302A}
+.keybox li::before{content:'✓';position:absolute;left:0;top:5px;color:var(--cheong);font-weight:800}
+.compare{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:14px;margin:26px 0}
+.cmp{border:2px solid var(--meok);border-radius:10px;padding:20px 16px;background:#FFFDF8;text-align:center;box-shadow:4px 4px 0 var(--meok)}
+.cmp-ic{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:25px;margin:0 auto 10px}
+.cmp-t{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:19px;margin-bottom:7px;color:var(--meok)}
+.cmp-d{font-family:'Gowun Batang',serif;font-size:14px;line-height:1.7;color:#403B33}
+.cmp-vs{align-self:center;font-family:'Hahmlet',serif;font-weight:900;color:var(--juchil);font-size:20px}
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:28px 0;padding:20px 16px;border:1.5px dashed var(--gunchung);border-radius:12px;background:rgba(39,74,120,.05)}
+.fstep{flex:1;min-width:108px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.fic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px}
+.fstep b{font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:15px;color:var(--meok)}
+.fstep i{font-family:'Gowun Batang',serif;font-style:normal;font-size:12.5px;color:var(--muted)}
+.farr{align-self:center;color:var(--juchil);font-weight:900;font-size:22px}
+.callout{display:flex;gap:13px;align-items:flex-start;margin:26px 0;padding:16px 20px;background:rgba(215,164,28,.12);border:1.5px solid rgba(215,164,28,.45);border-radius:12px}
+.co-ic{font-size:22px;flex-shrink:0;line-height:1.5}
+.callout p{font-family:'Gowun Batang',serif;font-size:15.5px;line-height:1.85;color:#34302A;margin:0}
+@media(max-width:720px){
+  .rpage article{padding:24px 20px}
+  .compare{grid-template-columns:1fr;gap:10px}.cmp-vs{padding:2px 0}
+  .flow{flex-direction:column}.farr{transform:rotate(90deg)}
+}
 `;
 
 function shell(o, body){
@@ -567,6 +634,31 @@ function shell(o, body){
     "</div></footer></body></html>";
 }
 
+// ---------- 메인 페이지 ----------
+// ---------- 배경 그림 (조선 산수화, 직접 그린 SVG) ----------
+function bgArt(){return "<svg viewBox='0 0 1440 900' preserveAspectRatio='xMidYMid slice' xmlns='http://www.w3.org/2000/svg'>"+
+ "<circle cx='1095' cy='225' r='120' fill='#C0532E' opacity='.5'/>"+
+ "<path d='M0 560 Q 220 470 430 545 T 840 520 Q 1080 470 1440 560 L1440 900 L0 900 Z' fill='#7a7264' opacity='.5'/>"+
+ "<path d='M0 660 Q 260 560 520 640 Q 760 715 1010 620 Q 1230 545 1440 650 L1440 900 L0 900 Z' fill='#544c40' opacity='.6'/>"+
+ "<path d='M0 760 Q 320 690 600 750 Q 900 815 1180 720 Q 1320 678 1440 745 L1440 900 L0 900 Z' fill='#37322a' opacity='.7'/>"+
+ "<rect x='0' y='602' width='1440' height='26' fill='#F8F4EC' opacity='.5'/>"+
+ "<rect x='0' y='690' width='1440' height='22' fill='#F8F4EC' opacity='.45'/>"+
+ "<g stroke='#2a261f' stroke-width='9' fill='none' opacity='.7' stroke-linecap='round'>"+
+   "<path d='M210 900 C 200 760 250 690 235 560'/>"+
+   "<path d='M235 600 C 280 580 320 600 360 575'/>"+
+   "<path d='M232 660 C 190 645 150 660 110 640'/>"+
+ "</g>"+
+ "<g fill='#2f3a2a' opacity='.55'>"+
+   "<ellipse cx='360' cy='565' rx='52' ry='20'/><ellipse cx='110' cy='632' rx='48' ry='18'/><ellipse cx='240' cy='540' rx='56' ry='22'/>"+
+ "</g>"+
+ "<g stroke='#2a261f' stroke-width='4' fill='none' opacity='.55' stroke-linecap='round'>"+
+   "<path d='M860 250 q 26 -20 52 0 M886 250 q 26 -20 52 0 M914 252 l 24 7'/>"+
+   "<path d='M980 212 q 22 -17 44 0 M1002 212 q 22 -17 44 0'/>"+
+ "</g>"+
+ "<g stroke='#544c40' stroke-width='3' fill='none' opacity='.4'>"+
+   "<path d='M120 852 q 40 -12 80 0 t 80 0 t 80 0'/><path d='M820 868 q 40 -12 80 0 t 80 0 t 80 0'/>"+
+ "</g>"+
+ "</svg>";}
 // ---------- 메인 페이지 ----------
 function homePage(){
   const pal=["p-juchil","p-gunchung","p-cheong","p-chija","p-meok","p-clay"];
@@ -589,6 +681,7 @@ function homePage(){
   const lattice="<svg class='lattice' viewBox='0 0 120 160' aria-hidden='true'><rect x='3' y='3' width='114' height='154' fill='none' stroke='#1C1814' stroke-width='3'/><line x1='34' y1='4' x2='34' y2='156'/><line x1='60' y1='4' x2='60' y2='156'/><line x1='86' y1='4' x2='86' y2='156'/><line x1='4' y1='42' x2='116' y2='42'/><line x1='4' y1='80' x2='116' y2='80'/><line x1='4' y1='118' x2='116' y2='118'/><rect class='r' x='46' y='62' width='28' height='36' fill='none'/><line class='r' x1='60' y1='42' x2='60' y2='62'/><line class='r' x1='60' y1='98' x2='60' y2='118'/></svg>";
 
   const body =
+   "<div class='bgart'>"+bgArt()+"</div>"+
    "<div class='jhome'>"+
    "<div class='wrap'><section class='jhero'>"+
      "<div class='seal'><span>단말</span><span class='en'>DANMALGI</span></div>"+
@@ -695,12 +788,18 @@ function regionPage(R){
   const near=sibs.length?("<div class=near><h3>"+esc(R._gungu||R._sido)+" 다른 동네</h3><div class=g>"+
      sibs.map(x=>"<a href=\"/r/"+encodeURIComponent(x.s)+"\">"+esc(x._dong)+"</a>").join("")+"</div></div>"):"";
   const body =
-   "<div class=col>"+
-   "<nav class=crumb><a href=\"/\">홈</a> › <a href=\"/find?q="+encodeURIComponent(R._sido)+"\">"+esc(R._sido)+"</a> › "+esc(R._gungu||"")+" › "+esc(R._dong)+"</nav>"+
+   "<div class='bgart'>"+bgArt()+"</div>"+
+   "<div class='col rpage'>"+
+   "<nav class='crumb2'>"+
+     "<a href=\"/\">🏠 홈</a><span class=sep>›</span>"+
+     "<a href=\"/find?q="+encodeURIComponent(R._sido)+"\">"+esc(R._sido)+"</a><span class=sep>›</span>"+
+     (R._gungu?("<a href=\"/find?q="+encodeURIComponent(R._gungu)+"\">"+esc(R._gungu)+"</a><span class=sep>›</span>"):"")+
+     "<span class=cur>📍 "+esc(R._dong)+"</span>"+
+   "</nav>"+
    "<article>"+
-     "<div class=h>"+esc(R.n)+"</div>"+
+     "<div class='r-eyebrow'>📍 "+esc(R.n)+"</div>"+
      "<h1>"+esc(R._dong)+" 카드단말기 설치 안내</h1>"+
-     "<div class=meta><span>발행 <b>"+korDate(pub)+"</b></span><span>수정 <b>"+korDate(mod)+"</b></span><span>"+esc(R._sido)+"</span></div>"+
+     "<div class='meta2'><span>🗓 발행 <b>"+korDate(pub)+"</b></span><span>🔄 수정 <b>"+korDate(mod)+"</b></span><span>🏷 "+esc(R._sido)+"</span></div>"+
      buildArticle(R)+
      "<div class=cta><div class=t>"+esc(fill(pick(CTA_T,hash(R.s+"ct")),R))+"</div><p>"+esc(fill(pick(CTA_B,hash(R.s+"cb")),R))+"</p><a href=\"tel:"+PHONE+"\">전화 상담 "+PHONE+"</a></div>"+
      near+
