@@ -89,7 +89,17 @@ function applySyn(s,seed){
   }
   return s;
 }
-function fill(s,R){ s=s.replace(/\{F\}/g,R.n).replace(/\{S\}/g,R._sido).replace(/\{G\}/g,R._gungu||R._sido).replace(/\{D\}/g,R._dong); return applySyn(s,R._syn); }
+function fill(s,R){
+  s=s.replace(/\{F\}/g,R.n).replace(/\{S\}/g,R._sido).replace(/\{G\}/g,R._gungu||R._sido).replace(/\{D\}/g,R._dong);
+  s=applySyn(s,R._syn);
+  if(R._dedup){ // 시도/시군구 글: 같은 지역명이 인접 반복되는 경우 정리
+    const names=[R._dong,R._gungu,R._sido].filter(function(v,i,a){return v&&a.indexOf(v)===i;});
+    for(const nm of names){ let prev; do{ prev=s;
+      s=s.split(nm+" "+nm).join(nm).split(nm+"와 "+nm).join(nm).split(nm+"과 "+nm).join(nm).split(nm+", "+nm).join(nm).split(nm+"·"+nm).join(nm);
+    }while(s!==prev); }
+  }
+  return s;
+}
 
 const DAY=86400000, PERIOD=18;
 function pad(n){ return n<10?"0"+n:""+n; }
@@ -664,6 +674,20 @@ article p.lead{font-size:19px;color:var(--ink);font-weight:500}
 .lgrid a:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--juchil);color:var(--juchil)}
 .lgrid a .ar{color:var(--juchil);font-weight:800;font-size:17px}
 .near .more{border-style:dashed!important;color:var(--juchil)!important;border-color:var(--juchil)!important;font-weight:700}
+
+/* ===== 모바일 안정화 ===== */
+html{overflow-x:hidden}
+img,svg{max-width:100%}
+@media(max-width:600px){.marquee .track{font-size:20px}}
+@media(max-width:480px){
+  .seal{width:60px;height:60px;font-size:16px;top:48px;right:2px}
+  .seal .en{display:none}
+  .wrap,.col{padding-left:18px;padding-right:18px}
+  .cta{padding:24px 20px}.jsec{padding:54px 0}.jhero{padding:54px 0 22px}
+  .rpage article{padding:22px 16px}
+  .h2ic{width:30px;height:30px;font-size:16px;margin-right:9px}
+}
+@media(max-width:400px){.hcall{display:none}}
 `;
 
 function shell(o, body){
@@ -877,9 +901,12 @@ function regionPage(R){
   return shell({title,desc,url,article:true,jsonld}, body);
 }
 
-// ---------- 시도 / 시군구 계층 페이지 ----------
+// ---------- 시도 / 시군구 계층 페이지 (하위페이지처럼 4000자+ 본문 포함) ----------
+function sidoArtR(sido){ const key="sido:"+sido; return {n:sido, s:key, _sido:sido, _gungu:"", _dong:sido, _syn:hash(key), _dedup:true}; }
+function gunguArtR(sido,gungu){ const key="gungu:"+sido+"|"+gungu; return {n:sido+" "+gungu, s:key, _sido:sido, _gungu:gungu, _dong:gungu, _syn:hash(key), _dedup:true}; }
 function listingPage(o){
   const items=o.items.map(it=>"<a href=\""+it.href+"\">"+esc(it.label)+"<span class=ar>›</span></a>").join("");
+  const meta = o.pub ? ("<div class='meta2'><span>📜 발행 <b>"+korDate(o.pub)+"</b></span><span>🔄 수정 <b>"+korDate(o.mod)+"</b></span><span>📍 "+esc(o.metaTag)+"</span></div>") : "";
   const body=
    "<div class='bgart'>"+bgArt()+"</div>"+
    "<div class='col rpage'>"+
@@ -887,11 +914,14 @@ function listingPage(o){
    "<article>"+
      "<div class='r-eyebrow'>"+o.eyebrow+"</div>"+
      "<h1>"+esc(o.h1)+"</h1>"+
+     meta+
+     (o.article||"")+
+     "<h2><span class='h2ic c-gunchung'>🗺️</span>"+esc(o.gridTitle||"바로가기")+"</h2>"+
      "<p class='listing-intro'>"+esc(o.intro)+"</p>"+
      "<div class='lgrid'>"+items+"</div>"+
-     "<div class=cta><div class=t>"+esc(o.ctaT)+"</div><p>"+esc(o.ctaB)+"</p><a href=\"tel:"+PHONE_TEL+"\">전화 상담 "+PHONE+"</a></div>"+
+     "<div class=cta><div class=t>"+esc(o.ctaT)+"</div><p>"+esc(o.ctaB)+"</p><a href=\"tel:"+PHONE_TEL+"\">📞 전화 상담 "+PHONE+"</a></div>"+
    "</article></div>";
-  return shell({title:o.title,desc:o.desc,url:o.url,jsonld:o.jsonld}, body);
+  return shell({title:o.title,desc:o.desc,url:o.url,article:true,jsonld:o.jsonld}, body);
 }
 function sidoPage(sido){
   const slug=SIDO_SLUGS[sido], url=SITE+"/sido/"+slug;
@@ -900,41 +930,55 @@ function sidoPage(sido){
   if(gungus.length) items=gungus.map(g=>({label:g, href:"/sigungu/"+(GUNGU_SLUGS[sido+"|"+g]||"")}));
   const direct=GROUPS.get(sido+"|")||[];
   if(direct.length) items=items.concat(direct.map(r=>({label:r._dong, href:"/r/"+r.s})));
+  const R=sidoArtR(sido), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
     title: sido+" 카드단말기 설치 안내 — "+(gungus.length?"시군구":"읍면동")+" | "+BRAND,
-    desc: sido+" 전 지역 카드단말기 설치 안내. "+sido+"의 시·군·구를 골라 우리 동네 안내로 이동하세요. 유선·무선·포스·간편결제.",
-    url: url,
+    desc: sido+" 전 지역 카드단말기 설치 안내. 유선·무선·포스·간편결제, 가격이 아닌 동네 상황에 맞춘 기준으로. "+sido+"의 시·군·구를 골라 우리 동네 안내로 이동하세요.",
+    url: url, pub:pub, mod:mod, metaTag:sido,
     crumb: "<a href=\"/\">🏠 홈</a><span class=sep>›</span><span class=cur>📍 "+esc(sido)+"</span>",
     eyebrow: "⛰️ "+esc(sido),
     h1: sido+" 카드단말기 안내",
-    intro: sido+"의 "+(gungus.length?"시·군·구":"읍·면·동")+"를 눌러 우리 동네 카드단말기 안내로 들어가세요. 가격이 아니라 동네 상황에 맞춰, 유선과 무선부터 포스와 간편결제까지 차분히 풀어 드립니다.",
+    article: buildArticle(R),
+    gridTitle: sido+"의 "+(gungus.length?"시·군·구 바로가기":"읍·면·동 바로가기"),
+    intro: sido+"의 "+(gungus.length?"시·군·구":"읍·면·동")+"를 눌러 우리 동네 카드단말기 안내로 들어가세요.",
     items: items,
     ctaT: sido+", 어디서든 설치",
     ctaB: "매장 위치와 업종만 알려 주세요. "+sido+" 어느 동네든 맞는 단말기를 함께 찾아 드립니다.",
-    jsonld:[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
-      {"@type":"ListItem","position":1,"name":"홈","item":SITE+"/"},
-      {"@type":"ListItem","position":2,"name":sido,"item":url}]}]
+    jsonld:[
+      {"@context":"https://schema.org","@type":"Article","headline":sido+" 카드단말기 설치 안내","inLanguage":"ko-KR","datePublished":isoDate(pub),"dateModified":isoDate(mod),"author":{"@type":"Organization","name":BRAND},"publisher":{"@type":"Organization","name":BRAND},"mainEntityOfPage":url,"image":OG_IMAGE,"about":sido+" 카드단말기 설치"},
+      {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+        {"@type":"ListItem","position":1,"name":"홈","item":SITE+"/"},
+        {"@type":"ListItem","position":2,"name":sido,"item":url}]},
+      {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqJsonLd(R)}
+    ]
   });
 }
 function sigunguPage(info){
   const sido=info.sido, gungu=info.gungu, key=info.key;
   const slug=GUNGU_SLUGS[key], sidoSlug=SIDO_SLUGS[sido], url=SITE+"/sigungu/"+slug;
   const items=(GROUPS.get(key)||[]).map(r=>({label:r._dong, href:"/r/"+r.s}));
+  const R=gunguArtR(sido,gungu), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
     title: gungu+" 카드단말기 설치 안내 — 읍면동 | "+BRAND,
-    desc: sido+" "+gungu+" 카드단말기 설치 안내. "+gungu+"의 읍·면·동을 골라 우리 동네 안내로 이동하세요.",
-    url: url,
+    desc: sido+" "+gungu+" 카드단말기 설치 안내. 유선·무선·포스·간편결제. "+gungu+"의 읍·면·동을 골라 우리 동네 안내로 이동하세요.",
+    url: url, pub:pub, mod:mod, metaTag:sido+" "+gungu,
     crumb: "<a href=\"/\">🏠 홈</a><span class=sep>›</span><a href=\"/sido/"+sidoSlug+"\">"+esc(sido)+"</a><span class=sep>›</span><span class=cur>📍 "+esc(gungu)+"</span>",
     eyebrow: "🏮 "+esc(sido+" "+gungu),
     h1: gungu+" 카드단말기 안내",
-    intro: gungu+"의 읍·면·동을 눌러 우리 동네 카드단말기 안내로 들어가세요. 유선과 무선, 포스와 간편결제 — 가게의 움직임에 맞는 답을 함께 찾습니다.",
+    article: buildArticle(R),
+    gridTitle: gungu+"의 읍·면·동 바로가기",
+    intro: gungu+"의 읍·면·동을 눌러 우리 동네 카드단말기 안내로 들어가세요.",
     items: items,
     ctaT: gungu+"에서 시작하세요",
     ctaB: "매장 위치와 업종만 알려 주세요. "+gungu+"에 맞는 단말기를 함께 짚어 드립니다.",
-    jsonld:[{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
-      {"@type":"ListItem","position":1,"name":"홈","item":SITE+"/"},
-      {"@type":"ListItem","position":2,"name":sido,"item":SITE+"/sido/"+sidoSlug},
-      {"@type":"ListItem","position":3,"name":gungu,"item":url}]}]
+    jsonld:[
+      {"@context":"https://schema.org","@type":"Article","headline":gungu+" 카드단말기 설치 안내","inLanguage":"ko-KR","datePublished":isoDate(pub),"dateModified":isoDate(mod),"author":{"@type":"Organization","name":BRAND},"publisher":{"@type":"Organization","name":BRAND},"mainEntityOfPage":url,"image":OG_IMAGE,"about":sido+" "+gungu+" 카드단말기 설치"},
+      {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+        {"@type":"ListItem","position":1,"name":"홈","item":SITE+"/"},
+        {"@type":"ListItem","position":2,"name":sido,"item":SITE+"/sido/"+sidoSlug},
+        {"@type":"ListItem","position":3,"name":gungu,"item":url}]},
+      {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqJsonLd(R)}
+    ]
   });
 }
 
