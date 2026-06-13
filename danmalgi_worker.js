@@ -872,7 +872,7 @@ for(var i=0;i<els.length;i++)io.observe(els[i]);})();
 function regionPage(R){
   const seed=hash(R.s);
   const pub=publishedDate(seed), mod=modifiedDate(seed);
-  const title="카드단말기 설치 "+R._dong+" — "+R.n+" | "+BRAND;
+  const title=(R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 설치 | "+R._sido+(R._gungu?" "+R._gungu:"")+" 카드단말기 전문 — "+BRAND;
   const desc=fill(pick(DESC,seed),R);
   const url=SITE+"/r/"+encodeURIComponent(R.s);
   // 인근(같은 시군구) 링크
@@ -910,7 +910,8 @@ function regionPage(R){
      {"@type":"ListItem","position":2,"name":R._sido},
      {"@type":"ListItem","position":3,"name":R._gungu||R._sido},
      {"@type":"ListItem","position":4,"name":R._dong,"item":url}]},
-   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqJsonLd(R)}
+   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqJsonLd(R)},
+   {"@context":"https://schema.org","@type":"Service","serviceType":"카드단말기 설치","name":R._dong+" 카드단말기 설치","provider":{"@type":"Organization","name":BRAND,"telephone":PHONE},"areaServed":{"@type":"Place","name":R.n},"description":desc}
   ];
   return shell({title,desc,url,article:true,jsonld}, body);
 }
@@ -1092,7 +1093,22 @@ function listPage(){
   return shell({title:"전체 안내 목록 — "+BRAND, desc:"전국 시·군·구·읍·면·동 카드단말기 설치 안내 전체 목록과 최근 업데이트.", url:SITE+"/list",
     jsonld:{"@context":"https://schema.org","@type":"CollectionPage","name":"전체 안내 목록","url":SITE+"/list"}}, body);
 }
-const ROBOTS=(DAUM_VERIFY?"#DaumWebMasterTool:"+DAUM_VERIFY+"\n":"")+(NAVER_VERIFY?"#naver-site-verification:"+NAVER_VERIFY+"\n":"")+"User-agent: *\nAllow: /\nSitemap: "+SITE+"/sitemap.xml\n";
+const AI_BOTS=["GPTBot","OAI-SearchBot","ChatGPT-User","PerplexityBot","Perplexity-User","Google-Extended","ClaudeBot","anthropic-ai","Claude-Web","Applebot-Extended","CCBot","Amazonbot","Bytespider","Bingbot","YandexBot"];
+const ROBOTS=(DAUM_VERIFY?"#DaumWebMasterTool:"+DAUM_VERIFY+"\n":"")+(NAVER_VERIFY?"#naver-site-verification:"+NAVER_VERIFY+"\n":"")
+  +"User-agent: *\nAllow: /\n\n"
+  +AI_BOTS.map(function(b){return "User-agent: "+b+"\nAllow: /\n";}).join("\n")
+  +"\nSitemap: "+SITE+"/sitemap.xml\n";
+const LLMS_TXT="# "+BRAND+" (danmalgi.com)\n\n"
++"> 전국 시·군·구·읍·면·동 단위 카드단말기 설치 안내 서비스. 유선·무선·포스(POS)·간편결제 단말기를 가격이 아닌 동네 상황에 맞춰 안내합니다. 무료 견적, 빠른 설치. 문의 "+PHONE+".\n\n"
++"## 핵심 페이지\n"
++"- [전체 목록]("+SITE+"/list): 전국 동네별 안내 색인\n"
++"- [사이트맵]("+SITE+"/sitemap.xml)\n"
++"- [RSS]("+SITE+"/rss.xml) · [Atom]("+SITE+"/atom.xml)\n\n"
++"## 안내 범위\n"
++"- 단말기 종류: 유선 단말기, 무선(휴대용) 단말기, 포스(POS), 간편결제(QR·앱)\n"
++"- 지역: 전국 17개 시·도, 시·군·구, 읍·면·동(약 6,597개 동네)\n"
++"- 제공: 가맹 신청·서류 안내, 설치, 사후 지원\n\n"
++"## 연락\n- 전화 및 문자: "+PHONE+"\n";
 
 // ---------- IndexNow (빙/얀덱스 등 즉시 색인 알림) ----------
 function allUrls(){
@@ -1139,6 +1155,7 @@ export default {
     let path=decodeURIComponent(url.pathname);
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
+    if(path==="/llms.txt") return resp(LLMS_TXT,"text/plain; charset=UTF-8");
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
     if(BING_VERIFY && path==="/BingSiteAuth.xml") return resp('<?xml version="1.0"?><users><user>'+BING_VERIFY+'</user></users>',"application/xml; charset=UTF-8");
     if(INDEXNOW_KEY && path==="/"+INDEXNOW_KEY+".txt") return resp(INDEXNOW_KEY,"text/plain; charset=UTF-8");
