@@ -404,6 +404,7 @@ function head(o){
   '<meta name="robots" content="index,follow">',
   '<link rel="canonical" href="'+esc(o.url)+'">',
   '<link rel="alternate" type="application/rss+xml" title="'+BRAND+' RSS" href="'+SITE+'/rss.xml">',
+  '<link rel="alternate" type="application/atom+xml" title="'+BRAND+' Atom" href="'+SITE+'/atom.xml">',
   '<meta property="og:type" content="'+(o.article?"article":"website")+'">',
   '<meta property="og:title" content="'+esc(o.title)+'">',
   '<meta property="og:description" content="'+esc(o.desc)+'">',
@@ -714,6 +715,7 @@ function shell(o, body){
     "<footer><div class=wrap><div class=flogo>"+logo+"</div>"+
       "<p style=\"margin-top:10px\">카드단말기 설치 안내 · 유선 · 무선 · 포스 · 간편결제</p>"+
       "<p style=\"margin-top:6px\">전국 시 · 군 · 구 · 읍 · 면 · 동 안내 — 우리 동네부터.</p>"+
+      "<p style=\"margin-top:8px;font-size:13px\"><a href=\"/list\" style=\"color:var(--clay);font-weight:700\">전체 목록</a> · <a href=\"/sitemap.xml\" style=\"color:var(--clay)\">사이트맵</a> · <a href=\"/rss.xml\" style=\"color:var(--clay)\">RSS</a> · <a href=\"/atom.xml\" style=\"color:var(--clay)\">Atom</a></p>"+
       "<p style=\"margin-top:18px;font-size:13px\">📞 <a href=\"tel:"+PHONE_TEL+"\" style=\"color:var(--clay);font-weight:700\">전화 "+PHONE+"</a> &nbsp; 💬 <a href=\"sms:"+PHONE_TEL+"\" style=\"color:var(--clay);font-weight:700\">문자 상담</a></p>"+
     "</div></footer>"+
     "<div class=floatbtns>"+
@@ -1017,6 +1019,7 @@ function findPage(qstr){
 function sitemap(){
   let u="<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
   u+="<url><loc>"+SITE+"/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>";
+  u+="<url><loc>"+SITE+"/list</loc><changefreq>daily</changefreq><priority>0.6</priority></url>";
   SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl) u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>"; });
   for(const k in GUNGU_SLUGS){ u+="<url><loc>"+SITE+"/sigungu/"+GUNGU_SLUGS[k]+"</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>"; }
   for(const r of REGIONS){
@@ -1046,6 +1049,47 @@ function rssFeed(){
   });
   return x+'</channel></rss>';
 }
+function atomFeed(){
+  const now=new Date();
+  const list=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,50);
+  let x='<?xml version="1.0" encoding="UTF-8"?>';
+  x+='<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ko">';
+  x+='<title>'+esc(BRAND)+' — 카드단말기 동네별 안내</title>';
+  x+='<subtitle>전국 시·군·구·읍·면·동 카드단말기 설치 안내</subtitle>';
+  x+='<link href="'+SITE+'/"/>';
+  x+='<link href="'+SITE+'/atom.xml" rel="self"/>';
+  x+='<id>'+SITE+'/</id>';
+  x+='<updated>'+now.toISOString()+'</updated>';
+  list.forEach(function(o){ const r=o.r, u=SITE+"/r/"+r.s, desc=fill(pick(DESC,hash(r.s)),r);
+    x+='<entry>';
+    x+='<title>'+esc(r._dong+' 카드단말기 설치 안내 — '+r.n)+'</title>';
+    x+='<link href="'+u+'"/><id>'+u+'</id>';
+    x+='<updated>'+o.m.toISOString()+'</updated>';
+    x+='<summary>'+esc(desc)+'</summary>';
+    x+='</entry>';
+  });
+  return x+'</feed>';
+}
+function listPage(){
+  const latest=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,120);
+  const latestLinks=latest.map(function(o){return "<a href=\"/r/"+o.r.s+"\">"+esc(o.r._dong)+" <small style='color:var(--muted)'>"+esc(o.r._gungu||o.r._sido)+"</small></a>";}).join("");
+  const sidoLinks=SIDOS.map(function(s){return "<a href=\"/sido/"+(SIDO_SLUGS[s]||"")+"\">"+esc(s)+"<span class=ar>›</span></a>";}).join("");
+  const body=
+   "<div class='bgart'>"+bgArt()+"</div>"+
+   "<div class='col rpage'>"+
+   "<nav class='crumb2'><a href=\"/\">🏠 홈</a><span class=sep>›</span><span class=cur>📜 전체 목록</span></nav>"+
+   "<article>"+
+     "<div class='r-eyebrow'>📜 전체 안내 목록</div>"+
+     "<h1>카드단말기 동네별 안내 — 전체 목록</h1>"+
+     "<p class='listing-intro'>최근 업데이트된 동네 안내와 시·도 전체를 한곳에 모았습니다. 우리 동네를 눌러 들어가세요.</p>"+
+     "<h2><span class='h2ic c-juchil'>🔔</span>최근 업데이트</h2>"+
+     "<div class='lgrid'>"+latestLinks+"</div>"+
+     "<h2><span class='h2ic c-gunchung'>🗺️</span>시 · 도 전체</h2>"+
+     "<div class='lgrid'>"+sidoLinks+"</div>"+
+   "</article></div>";
+  return shell({title:"전체 안내 목록 — "+BRAND, desc:"전국 시·군·구·읍·면·동 카드단말기 설치 안내 전체 목록과 최근 업데이트.", url:SITE+"/list",
+    jsonld:{"@context":"https://schema.org","@type":"CollectionPage","name":"전체 안내 목록","url":SITE+"/list"}}, body);
+}
 const ROBOTS=(DAUM_VERIFY?"#DaumWebMasterTool:"+DAUM_VERIFY+"\n":"")+(NAVER_VERIFY?"#naver-site-verification:"+NAVER_VERIFY+"\n":"")+"User-agent: *\nAllow: /\nSitemap: "+SITE+"/sitemap.xml\n";
 const OG_SVG=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="#F8F4EC"/><rect x="40" y="40" width="1120" height="550" fill="none" stroke="#16130F" stroke-width="2"/><text x="80" y="270" font-family="serif" font-size="92" font-weight="800" fill="#16130F">카드단말기,</text><text x="80" y="380" font-family="serif" font-size="92" font-weight="800" fill="#16130F">동네에서 <tspan fill="#C0532E">시작하다</tspan></text><line x1="80" y1="430" x2="430" y2="430" stroke="#16130F" stroke-width="3"/><text x="80" y="478" font-family="sans-serif" font-size="30" fill="#3A352E">유선 · 무선 · 포스 · 간편결제 설치 안내</text><text x="1080" y="540" text-anchor="end" font-family="sans-serif" font-size="34" font-weight="800" fill="#16130F">단말기<tspan fill="#C0532E">닷컴</tspan></text></svg>`;
 
@@ -1066,6 +1110,8 @@ export default {
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
     if(path==="/sitemap.xml") return resp(sitemap(),"application/xml; charset=UTF-8");
     if(path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed") return resp(rssFeed(),"application/rss+xml; charset=UTF-8");
+    if(path==="/atom.xml"||path==="/atom") return resp(atomFeed(),"application/atom+xml; charset=UTF-8");
+    if(path==="/list"||path==="/sitemap.html") return resp(listPage(),"text/html; charset=UTF-8");
     if(path==="/og.svg") return resp(OG_SVG,"image/svg+xml");
     if(path==="/api/find"){
       const q=url.searchParams.get("q")||"";
