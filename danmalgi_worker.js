@@ -13,6 +13,7 @@ const BRAND     = "단말기닷컴";
 // -------- 검색엔진 소유확인 (발급받은 'content' 값만 붙여넣기, 없으면 빈칸) --------
 const GOOGLE_VERIFY = "";   // Google Search Console (HTML 태그 방식)
 const NAVER_VERIFY  = "ed03a83fcbdc1b9019ec8dfc5b3d39c16ebf7e5d";   // 네이버 서치어드바이저
+const NAVER_WCS     = "1756b38f497c200";   // 네이버 애널리틱스(웹로그) wa 값, 없으면 빈칸
 const BING_VERIFY   = "";   // Bing Webmaster
 const DAUM_VERIFY   = "e409bcde9418b204b5031d53e9d3b2a20f8d24cfb4ce59445f0f3b332a0314c2:6aS0ois52M2zDbRxmlzo0Q==";   // 다음(카카오) 검색등록
 const GOOGLE_VERIFY_FILE = ""; // 파일 방식 쓸 때만, 예: "google1234abcd.html"
@@ -422,6 +423,7 @@ function head(o){
   '<link rel="icon" type="image/png" sizes="48x48" href="'+SITE+'/favicon-48.png">',
   '<link rel="icon" type="image/svg+xml" href="'+SITE+'/favicon.svg">',
   '<link rel="apple-touch-icon" href="'+SITE+'/apple-touch-icon.png">',
+  NAVER_WCS ? '<script src="https://wcs.pstatic.net/wcslog.js"></script><script>if(!wcs_add)var wcs_add={};wcs_add["wa"]="'+NAVER_WCS+'";if(window.wcs){wcs_do();}</script>' : '',
   '<link rel="alternate" type="application/rss+xml" title="'+BRAND+' RSS" href="'+SITE+'/rss.xml">',
   '<link rel="alternate" type="application/atom+xml" title="'+BRAND+' Atom" href="'+SITE+'/atom.xml">',
   '<meta property="og:type" content="'+(o.article?"article":"website")+'">',
