@@ -752,6 +752,7 @@ function shell(o, body){
       "<a class='fab fab-call' href=\"tel:"+PHONE_TEL+"\"><span class=fab-ic>📞</span><span class=fab-t>전화 상담</span></a>"+
       "<a class='fab fab-sms' href=\"sms:"+PHONE_TEL+"\"><span class=fab-ic>💬</span><span class=fab-t>문자 상담</span></a>"+
     "</div>"+
+    "<script>(function(){function t(ty){try{fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:ty,page:location.pathname,ref:document.referrer})});}catch(e){}}if(location.pathname.indexOf('/api/')!==0)t('view');document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a');if(!a)return;var h=a.getAttribute('href')||'';if(h.indexOf('tel:')===0)t('tel');else if(h.indexOf('sms:')===0)t('sms');},true);})();<\/script>"+
     "</body></html>";
 }
 
@@ -1185,9 +1186,11 @@ function resp(html,type,extra){
 }
 
 export default {
-  async fetch(request){
+  async fetch(request, env){
     const url=new URL(request.url);
     let path=decodeURIComponent(url.pathname);
+    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare("INSERT INTO events (site,type,page,ref,ip,ts) VALUES (?,?,?,?,?,?)").bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
+    if(path==="/api/track"&&request.method==="OPTIONS")return new Response(null,{headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
     if(path==="/llms.txt") return resp(LLMS_TXT,"text/plain; charset=UTF-8");
