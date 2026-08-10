@@ -903,8 +903,13 @@ for(var i=0;i<els.length;i++)io.observe(els[i]);})();
 function regionPage(R){
   const seed=hash(R.s);
   const pub=publishedDate(seed), mod=modifiedDate(seed);
-  const title=(R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 설치 | "+R._sido+(R._gungu?" "+R._gungu:"")+" 카드단말기 전문 — "+BRAND;
-  const desc=fill(pick(DESC,seed),R);
+  const T_REGION=[
+    (R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 설치·교체 — 방문 설치 | "+BRAND,
+    R._dong+" 카드단말기 설치 "+(R._gungu?R._gungu+" ":"")+"신규·교체 — 유선·무선·포스 | "+BRAND,
+    R._dong+" 카드단말기 어디서 설치? "+R._sido+(R._gungu?" "+R._gungu:"")+" 방문 상담 | "+BRAND
+  ];
+  const title=T_REGION[seed%3];
+  const desc=fill(pick(DESC,seed),R)+" 방문 상담 "+PHONE+".";
   const url=SITE+"/r/"+encodeURIComponent(R.s);
   // 인근(같은 시군구) 링크
   const sibs=(GROUPS.get(R._sido+"|"+R._gungu)||[]).filter(x=>x.s!==R.s).slice(0,12);
@@ -976,7 +981,7 @@ function sidoPage(sido){
   if(direct.length) items=items.concat(direct.map(r=>({label:r._dong, href:"/r/"+r.s})));
   const R=sidoArtR(sido), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
-    title: sido+" 카드단말기 설치 안내 — "+(gungus.length?"시군구":"읍면동")+" | "+BRAND,
+    title: sido+" 카드단말기 설치·교체 — 유선·무선·포스 방문 설치 | "+BRAND,
     desc: sido+" 전 지역 카드단말기 설치 안내. 유선·무선·포스·간편결제, 가격이 아닌 동네 상황에 맞춘 기준으로. "+sido+"의 시·군·구를 골라 우리 동네 안내로 이동하세요.",
     url: url, pub:pub, mod:mod, metaTag:sido,
     image: photoFor(seed),
@@ -1004,7 +1009,7 @@ function sigunguPage(info){
   const items=(GROUPS.get(key)||[]).map(r=>({label:r._dong, href:"/r/"+r.s}));
   const R=gunguArtR(sido,gungu), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
-    title: gungu+" 카드단말기 설치 안내 — 읍면동 | "+BRAND,
+    title: sido+" "+gungu+" 카드단말기 설치·교체 — 방문 상담·신규 개통 | "+BRAND,
     desc: sido+" "+gungu+" 카드단말기 설치 안내. 유선·무선·포스·간편결제. "+gungu+"의 읍·면·동을 골라 우리 동네 안내로 이동하세요.",
     url: url, pub:pub, mod:mod, metaTag:sido+" "+gungu,
     image: photoFor(seed),
@@ -1189,7 +1194,7 @@ export default {
   async fetch(request, env){
     const url=new URL(request.url);
     let path=decodeURIComponent(url.pathname);
-    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ip=request.headers.get("CF-Connecting-IP")||"";const ua=request.headers.get("User-Agent")||"";const isBot=/bot|crawl|spider|slurp|mediapartners|googlebot|bingbot|yandex|baidu|duckduckbot|facebookexternalhit|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider|headlesschrome|python-requests|curl|wget/i.test(ua);const ts=new Date().toISOString();if(env&&env.DB&&!(b.type==="view"&&isBot)&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare("INSERT INTO events (site,type,page,ref,ip,ts) VALUES (?,?,?,?,?,?)").bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
+    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare("INSERT INTO events (site,type,page,ref,ip,ts) VALUES (?,?,?,?,?,?)").bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
     if(path==="/api/track"&&request.method==="OPTIONS")return new Response(null,{headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
