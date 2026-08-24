@@ -903,13 +903,8 @@ for(var i=0;i<els.length;i++)io.observe(els[i]);})();
 function regionPage(R){
   const seed=hash(R.s);
   const pub=publishedDate(seed), mod=modifiedDate(seed);
-  const T_REGION=[
-    (R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 설치·교체 — 방문 설치 | "+BRAND,
-    R._dong+" 카드단말기 설치 "+(R._gungu?R._gungu+" ":"")+"신규·교체 — 유선·무선·포스 | "+BRAND,
-    R._dong+" 카드단말기 어디서 설치? "+R._sido+(R._gungu?" "+R._gungu:"")+" 방문 상담 | "+BRAND
-  ];
-  const title=T_REGION[seed%3];
-  const desc=fill(pick(DESC,seed),R)+" 방문 상담 "+PHONE+".";
+  const title=(R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 설치 | "+R._sido+(R._gungu?" "+R._gungu:"")+" 카드단말기 전문 — "+BRAND;
+  const desc=fill(pick(DESC,seed),R);
   const url=SITE+"/r/"+encodeURIComponent(R.s);
   // 인근(같은 시군구) 링크
   const sibs=(GROUPS.get(R._sido+"|"+R._gungu)||[]).filter(x=>x.s!==R.s).slice(0,12);
@@ -981,7 +976,7 @@ function sidoPage(sido){
   if(direct.length) items=items.concat(direct.map(r=>({label:r._dong, href:"/r/"+r.s})));
   const R=sidoArtR(sido), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
-    title: sido+" 카드단말기 설치·교체 — 유선·무선·포스 방문 설치 | "+BRAND,
+    title: sido+" 카드단말기 설치 안내 — "+(gungus.length?"시군구":"읍면동")+" | "+BRAND,
     desc: sido+" 전 지역 카드단말기 설치 안내. 유선·무선·포스·간편결제, 가격이 아닌 동네 상황에 맞춘 기준으로. "+sido+"의 시·군·구를 골라 우리 동네 안내로 이동하세요.",
     url: url, pub:pub, mod:mod, metaTag:sido,
     image: photoFor(seed),
@@ -1009,7 +1004,7 @@ function sigunguPage(info){
   const items=(GROUPS.get(key)||[]).map(r=>({label:r._dong, href:"/r/"+r.s}));
   const R=gunguArtR(sido,gungu), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
-    title: sido+" "+gungu+" 카드단말기 설치·교체 — 방문 상담·신규 개통 | "+BRAND,
+    title: gungu+" 카드단말기 설치 안내 — 읍면동 | "+BRAND,
     desc: sido+" "+gungu+" 카드단말기 설치 안내. 유선·무선·포스·간편결제. "+gungu+"의 읍·면·동을 골라 우리 동네 안내로 이동하세요.",
     url: url, pub:pub, mod:mod, metaTag:sido+" "+gungu,
     image: photoFor(seed),
@@ -1190,11 +1185,77 @@ function resp(html,type,extra){
   return new Response(html,{headers:Object.assign({"content-type":type,"cache-control":"public, max-age=600"},extra||{})});
 }
 
+
+/* ─── 텔레그램 전환 알림 (전화·문자 버튼 클릭 시 즉시 알림) ─── */
+const TG_TOKEN = '8101954996:AAGNV225WaNL8Zqh9OxtmP1WNzlbquNaq9s';
+const TG_CHAT  = '8649422714';
+const TG_LABEL = { tel: '전화 버튼 클릭', sms: '문자 버튼 클릭', contact: '상담 버튼 클릭' };
+const TG_SITE   = '단말기닷컴';
+const TG_DOMAIN = 'danmalgi.com';
+const TG_ORIGIN = 'https://danmalgi.com';
+function tgDescribe(path){
+  const seg=String(path||'').split('?')[0].split('/').filter(Boolean);
+  if(!seg.length) return '메인';
+  const p0=seg[0];
+  if(p0==='list'||p0==='sitemap.html') return '전체 목록';
+  if(p0==='find') return '지역 검색';
+  if(p0==='r'&&seg[1]){ const r=BY_SLUG.get(decodeURIComponent(seg[1])); return r?r.n:'지역 페이지'; }
+  if(p0==='sido'&&seg[1]){ const s=SLUG2SIDO.get(seg[1]); return s?s:'시도 페이지'; }
+  if(p0==='sigungu'&&seg[1]){ const g=SLUG2GUNGU.get(seg[1]); return g?(g.sido+' '+g.gungu):'시군구 페이지'; }
+  return '일반 페이지';
+}
+function tgRef(ref){
+  if(!ref) return '직접 방문 또는 알 수 없음';
+  try{
+    const h=new URL(ref).hostname.replace(/^www\./,'');
+    if(h===TG_DOMAIN||h.endsWith('.'+TG_DOMAIN)) return '사이트 내부 이동';
+    if(h.includes('naver')) return '네이버';
+    if(h.includes('google')) return '구글';
+    if(h.includes('daum')) return '다음';
+    if(h.includes('bing')) return 'Bing';
+    if(h.includes('kakao')) return '카카오';
+    if(h.includes('instagram')) return '인스타그램';
+    if(h.includes('facebook')) return '페이스북';
+    if(h.includes('youtube')) return '유튜브';
+    if(h.includes('tiktok')) return '틱톡';
+    if(h.includes('zum')) return '줌';
+    return h;
+  }catch(e){ return '알 수 없음'; }
+}
+function tgTime(){
+  const d=new Date(Date.now()+9*3600000);
+  const z=n=>String(n).padStart(2,'0');
+  return d.getUTCFullYear()+'-'+z(d.getUTCMonth()+1)+'-'+z(d.getUTCDate())+' '+z(d.getUTCHours())+':'+z(d.getUTCMinutes());
+}
+const TG_BOT_RE = /bot|crawl|spider|slurp|facebookexternalhit|curl|wget|python|axios|headless|lighthouse|pagespeed|semrush|ahrefs|bytespider|applebot|monitor|uptime|scan/i;
+async function tgNotify(type,page,ref,ua){
+  if(!TG_TOKEN||TG_TOKEN.indexOf('PASTE_')===0) return;
+  if(!TG_CHAT||TG_CHAT.indexOf('PASTE_')===0) return;
+  const label=TG_LABEL[type];
+  if(!label) return;
+  const L=[];
+  L.push((type==='tel'?'📞 ':'📝 ')+label);
+  L.push('');
+  L.push('사이트: '+TG_SITE+' ('+TG_DOMAIN+')');
+  L.push('페이지: '+TG_ORIGIN+page);
+  L.push('한글: '+tgDescribe(page));
+  L.push('유입: '+tgRef(ref));
+  L.push('기기: '+(/Mobile|Android|iPhone|iPad/i.test(ua||'')?'모바일':'PC'));
+  L.push('시각: '+tgTime()+' (KST)');
+  try{
+    await fetch('https://api.telegram.org/bot'+TG_TOKEN+'/sendMessage',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:TG_CHAT,text:L.join('\n'),disable_web_page_preview:true})
+    });
+  }catch(e){}
+}
+/* ─── 텔레그램 알림 끝 ─── */
+
 export default {
-  async fetch(request, env){
+  async fetch(request, env, ctx){
     const url=new URL(request.url);
     let path=decodeURIComponent(url.pathname);
-    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare("INSERT INTO events (site,type,page,ref,ip,ts) VALUES (?,?,?,?,?,?)").bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
+    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[b.type]){const tgp=tgNotify(b.type,(b.page||"/").slice(0,300),b.ref||"",ua);if(ctx&&ctx.waitUntil)ctx.waitUntil(tgp);else await tgp;}const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare("INSERT INTO events (site,type,page,ref,ip,ts) VALUES (?,?,?,?,?,?)").bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
     if(path==="/api/track"&&request.method==="OPTIONS")return new Response(null,{headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
