@@ -752,7 +752,7 @@ function shell(o, body){
       "<a class='fab fab-call' href=\"tel:"+PHONE_TEL+"\"><span class=fab-ic>📞</span><span class=fab-t>전화 상담</span></a>"+
       "<a class='fab fab-sms' href=\"sms:"+PHONE_TEL+"\"><span class=fab-ic>💬</span><span class=fab-t>문자 상담</span></a>"+
     "</div>"+
-    "<script>(function(){function t(ty){try{fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:ty,page:location.pathname,ref:document.referrer})});}catch(e){}}if(location.pathname.indexOf('/api/')!==0)t('view');document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a');if(!a)return;var h=a.getAttribute('href')||'';if(h.indexOf('tel:')===0)t('tel');else if(h.indexOf('sms:')===0)t('sms');},true);})();<\/script>"+
+    "<script>(function(){function t(ty){try{fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:ty,page:location.pathname,ref:document.referrer}),keepalive:true});}catch(e){}}if(location.pathname.indexOf('/api/')!==0)t('view');document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a');if(!a)return;var h=a.getAttribute('href')||'';if(h.indexOf('tel:')===0)t('tel');else if(h.indexOf('sms:')===0)t('sms');},true);})();<\/script>"+
     "</body></html>";
 }
 
