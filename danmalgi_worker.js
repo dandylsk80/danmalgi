@@ -1197,9 +1197,9 @@ function tgDescribe(path){
   const p0=seg[0];
   if(p0==='list'||p0==='sitemap.html') return '전체 목록';
   if(p0==='find') return '지역 검색';
-  if(p0==='r'&&seg[1]){ const r=BY_SLUG.get(decodeURIComponent(seg[1])); return r?r.n:'지역 페이지'; }
-  if(p0==='sido'&&seg[1]){ const s=SLUG2SIDO.get(seg[1]); return s?s:'시도 페이지'; }
-  if(p0==='sigungu'&&seg[1]){ const g=SLUG2GUNGU.get(seg[1]); return g?(g.sido+' '+g.gungu):'시군구 페이지'; }
+  if(p0==='r'&&seg[1]){ const r=BY_SLUG.get(decodeURIComponent(seg[1])); return r?(r.n+' 카드단말기'):'지역 페이지'; }
+  if(p0==='sido'&&seg[1]){ const s=SLUG2SIDO.get(seg[1]); return s?(s+' 카드단말기'):'시도 페이지'; }
+  if(p0==='sigungu'&&seg[1]){ const g=SLUG2GUNGU.get(seg[1]); return g?(g.sido+' '+g.gungu+' 카드단말기'):'시군구 페이지'; }
   return '일반 페이지';
 }
 function tgRef(ref){
@@ -1237,7 +1237,7 @@ async function tgNotify(env, type,page,ref,ua){
   L.push('');
   L.push('사이트: '+TG_SITE+' ('+TG_DOMAIN+')');
   L.push('페이지: '+TG_ORIGIN+page);
-  L.push('한글: '+tgDescribe(page));
+  L.push('검색 키워드: '+tgDescribe(page));
   L.push('유입: '+tgRef(ref));
   L.push('기기: '+(/Mobile|Android|iPhone|iPad/i.test(ua||'')?'모바일':'PC'));
   L.push('시각: '+tgTime()+' (KST)');
