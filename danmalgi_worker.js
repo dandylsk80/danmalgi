@@ -1,3 +1,13 @@
+/* ===== 한국어 조사 자동 판별 (받침 유무) — 13개 사이트 공통 =====
+   J("강남동","은","는") -> "강남동은"   J("제주시","은","는") -> "제주시는"
+   J(x,"으로","로") 은 ㄹ 받침도 처리한다. 한글이 아니면 받침 없음으로 본다. */
+function hasJong(w){ if(w==null) return false; w=String(w).trim(); if(!w) return false;
+  const c=w.charCodeAt(w.length-1); return (c>=0xAC00&&c<=0xD7A3) ? (c-0xAC00)%28!==0 : false; }
+function J(w,a,b){ w=String(w==null?"":w);
+  const c=w.charCodeAt(w.length-1)-0xAC00, j=(c<0||c>11171)?-1:c%28;
+  if(a==="\uc73c\ub85c"||b==="\ub85c") return w+((j<=0||j===8)?"\ub85c":"\uc73c\ub85c");
+  return w+(j>0?a:b); }
+
 /* ===== 방문 상세 메타: 기기 / 유입경로 / 검색 키워드 ===== */
 function tkDevice(ua){
   ua = ua || "";
@@ -146,6 +156,7 @@ function applySyn(s,seed){
     const g=SYN[i], rep=g[1][(seed+i*13)%g[1].length];
     if(rep===g[0]) continue;
     s=s.replace(new RegExp("(^|[\\s(\u2018\u201c\u00b7,.\u2014-])"+reEsc(g[0]),"g"), "$1"+rep);
+    s=fixJosa(s,[rep]);
   }
   return s;
 }
