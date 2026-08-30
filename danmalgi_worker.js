@@ -1267,6 +1267,26 @@ export default {
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
     if(BING_VERIFY && path==="/BingSiteAuth.xml") return resp('<?xml version="1.0"?><users><user>'+BING_VERIFY+'</user></users>',"application/xml; charset=UTF-8");
     if(INDEXNOW_KEY && path==="/"+INDEXNOW_KEY+".txt") return resp(INDEXNOW_KEY,"text/plain; charset=UTF-8");
+    if(path==="/indexnow/probe"){
+      if(url.searchParams.get("key")!==INDEXNOW_KEY) return new Response("forbidden",{status:403});
+      const host=new URL(SITE).host, keyLocation=SITE+"/"+INDEXNOW_KEY+".txt";
+      const payload=JSON.stringify({host:host,key:INDEXNOW_KEY,keyLocation:keyLocation,urlList:[SITE+"/"]});
+      const eps=["https://api.indexnow.org/indexnow","https://www.bing.com/indexnow","https://yandex.com/indexnow","https://searchadvisor.naver.com/indexnow","https://search.seznam.cz/indexnow"];
+      const uas=["", "Mozilla/5.0 (compatible; danmalgi-indexnow/1.0; +https://danmalgi.com/)"];
+      const out=[];
+      for(const ep of eps){
+        for(const ua of uas){
+          const h={"Content-Type":"application/json; charset=utf-8"};
+          if(ua) h["User-Agent"]=ua;
+          try{
+            const r=await fetch(ep,{method:"POST",headers:h,body:payload});
+            let b=""; try{ b=(await r.text()).slice(0,200); }catch(e2){}
+            out.push({endpoint:ep,ua:ua?"있음":"없음",status:r.status,body:b});
+          }catch(e){ out.push({endpoint:ep,ua:ua?"있음":"없음",error:String(e)}); }
+        }
+      }
+      return new Response(JSON.stringify(out,null,1),{headers:{"content-type":"application/json; charset=UTF-8"}});
+    }
     if(path==="/indexnow/today"||path==="/indexnow/all"){
       if(url.searchParams.get("key")!==INDEXNOW_KEY) return new Response("forbidden",{status:403});
       const urls=path.endsWith("/all")?allUrls():todaysUpdatedUrls();
