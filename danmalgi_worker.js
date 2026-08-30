@@ -1,35 +1,3 @@
-/* ===== 방문 상세 메타: 기기 / 유입경로 / 검색 키워드 ===== */
-function tkDevice(ua){
-  ua = ua || "";
-  if(/ipad|tablet|playbook|silk|kindle|android(?!.*mobile)/i.test(ua)) return "tablet";
-  if(/mobile|iphone|ipod|android|blackberry|iemobile|opera mini|webos/i.test(ua)) return "mobile";
-  return "pc";
-}
-function tkSource(ref, selfHost){
-  if(!ref) return "direct";
-  var h = "";
-  try{ h = new URL(ref).hostname.toLowerCase(); }catch(e){ return "etc"; }
-  if(!h) return "etc";
-  if(selfHost && (h === selfHost || h === "www." + selfHost)) return "direct"; /* 사이트 내부 이동 */
-  if(h.indexOf("naver") >= 0) return "naver";
-  if(h.indexOf("google") >= 0) return "google";
-  if(h.indexOf("daum") >= 0 || h.indexOf("kakao") >= 0) return "daum";
-  return "etc";
-}
-function tkKeyword(ref){
-  if(!ref) return "";
-  try{
-    var p = new URL(ref).searchParams;
-    var keys = ["query","q","keyword","wd","search_query","text"];
-    for(var i=0;i<keys.length;i++){ var v = p.get(keys[i]); if(v) return v.trim().slice(0,100); }
-  }catch(e){}
-  return "";
-}
-/* INSERT 의 ua/device/source/keyword 4개 값을 순서대로 반환 */
-function tkMeta(ua, ref, selfHost){
-  return [ (ua||"").slice(0,250), tkDevice(ua), tkSource(ref, selfHost), tkKeyword(ref) ];
-}
-
 /* 대시보드 방문자 집계용 봇 UA 필터 (크롤러를 방문자로 세지 않기 위함) */
 const BOT_UA_RE = /bot|crawl|spider|slurp|mediapartners|googlebot|bingbot|yandex|baidu|duckduckbot|facebookexternalhit|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider|headlesschrome|python-requests|curl|wget|yeti|daumoa|lighthouse|pagespeed|inspectiontool|googleother|applebot|amazonbot|archiver|scrapy|node-fetch|okhttp|go-http|libwww|httpclient|dataforseo|serpstat|zoominfo|bubing|linkdex/i;
 // ============================================================
@@ -56,6 +24,8 @@ const INDEXNOW_KEY = "a7f3c1e9b2d84056f1a9c3e7b5d20496"; // IndexNow 키(임의 
 // ※ 사진이 안 뜨면 IMG_BASE만 본인 저장소에 맞게 고치세요.
 const IMG_BASE = "https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/image/";
 const PHOTOS = ["pexels-419907350-37856472.jpg","pexels-anhdanghihi-20454105.jpg","pexels-anhdanghihi-20454106.jpg","pexels-b-o-minh-1883288-35228891.jpg","pexels-betul-341981540-32814268.jpg","pexels-charlotte-may-5946963.jpg","pexels-chipi1189-33964546.jpg","pexels-dung-ph-m-694024428-18405036.jpg","pexels-ekrulila-32416016.jpg","pexels-hexuye-ye-81431575-8784720.jpg","pexels-ketut-subiyanto-4349944.jpg","pexels-kevinbidwell-2323432.jpg","pexels-laotie-miao-523854977-16464587.jpg","pexels-mavicair2tw-29867234.jpg","pexels-minchephoto-6879450.jpg","pexels-mtyutina-5091144.jpg","pexels-nam-quan-nguy-n-459228913-16024411.jpg","pexels-nhi-tran-863971602-33618578.jpg","pexels-peterdanthy-34363536.jpg","pexels-rachel-claire-5531303.jpg","pexels-roopsarkar-32550034.jpg","pexels-roopsarkar-34517063.jpg","pexels-soc-nang-d-ng-2150345854-34771315.jpg","pexels-soc-nang-d-ng-2150345854-36433589.jpg","pexels-soc-nang-d-ng-2150345854-36649774.jpg","pexels-speedwagwon-35774245-11482921.jpg","pexels-toktak-phitsinee-19163808-8780450.jpg","pexels-vi-t-anh-nguy-n-2150409023-31133774.jpg","pexels-vi-t-anh-nguy-n-2150409023-33707727.jpg","pexels-voltfather-18235152.jpg","pexels-voltfather-18243122.jpg"];
+const PHOTOS_D = ["pexels-christina99999-30413428.jpg","pexels-francesco-ungaro-15798780.jpg","pexels-g-n-403098-29537620.jpg","pexels-iwashere-14840752.jpg","pexels-jplenio-1445324.jpg","pexels-kindelmedia-8488021.jpg","pexels-kindelmedia-8488037.jpg","pexels-mographe-15360461.jpg","pexels-nick-noyes-271794-19188877.jpg","pexels-noemiji-37663438.jpg","pexels-rezwan-1078884.jpg","pexels-sejio402-27134570.jpg","pexels-suntorn-somtong-386224-1029243.jpg","pexels-thirdman-5583614.jpg","pexels-tizzy-34965713.jpg"];
+function photoForD(seed){ if(!PHOTOS_D.length) return photoFor(seed); const i=((seed%PHOTOS_D.length)+PHOTOS_D.length)%PHOTOS_D.length; return IMG_BASE+"demo/"+encodeURIComponent(PHOTOS_D[i]); }
 function photoFor(seed){ if(!PHOTOS.length) return OG_IMAGE; const i=((seed%PHOTOS.length)+PHOTOS.length)%PHOTOS.length; return IMG_BASE+encodeURIComponent(PHOTOS[i]); }
 function heroBanner(img, ebHtml, h1text){
   return "<div class='hbann'>"+
@@ -138,16 +108,44 @@ const SYN=[
  ["갖춰",["갖춰","마련해"]],
  ["살펴",["살펴","들여다"]]
 ];
+function reEsc(x){ return x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
 function applySyn(s,seed){
   for(let i=0;i<SYN.length;i++){
     const g=SYN[i], rep=g[1][(seed+i*13)%g[1].length];
-    if(rep!==g[0]) s=s.split(g[0]).join(rep);
+    if(rep===g[0]) continue;
+    s=s.replace(new RegExp("(^|[\\s(\u2018\u201c\u00b7,.\u2014-])"+reEsc(g[0]),"g"), "$1"+rep);
+  }
+  return s;
+}
+// 지역명 뒤 조사 자동 교정 (받침 유무에 따라 은/는, 이/가, 을/를, 와/과, 으로/로)
+function josaFor(word,j){
+  const ch=word.charCodeAt(word.length-1)-0xAC00;
+  const hasJong = (ch>=0 && ch<=11171) ? ((ch%28)!==0) : false;
+  const isRieul = (ch>=0 && ch<=11171) ? ((ch%28)===8) : false;
+  switch(j){
+    case "은": case "는": return hasJong?"은":"는";
+    case "이": case "가": return hasJong?"이":"가";
+    case "을": case "를": return hasJong?"을":"를";
+    case "와": case "과": return hasJong?"과":"와";
+    case "으로": case "로": return (!hasJong||isRieul)?"로":"으로";
+    case "이나": case "나": return hasJong?"이나":"나";
+    case "이라": case "라": return hasJong?"이라":"라";
+    case "이며": case "며": return hasJong?"이며":"며";
+    default: return j;
+  }
+}
+function fixJosa(s,names){
+  for(const nm of names){
+    if(!nm) continue;
+    s=s.replace(new RegExp(reEsc(nm)+"(\uc73c\ub85c|\uc774\ub098|\uc774\ub77c|\uc774\uba70|[\uc740\ub294\uc774\uac00\uc744\ub97c\uc640\uacfc\ub85c\ub098\ub77c\uba70])(?=[\\s.,!?)\u00b7\u2019\u201d]|$)","g"),
+      function(m,j){ return nm+josaFor(nm,j); });
   }
   return s;
 }
 function fill(s,R){
   s=s.replace(/\{F\}/g,R.n).replace(/\{S\}/g,R._sido).replace(/\{G\}/g,R._gungu||R._sido).replace(/\{D\}/g,R._dong);
   s=applySyn(s,R._syn);
+  s=fixJosa(s,[R.n,R._sido,R._gungu||R._sido,R._dong]);
   if(R._dedup){ // 시도/시군구 글: 같은 지역명이 인접 반복되는 경우 정리
     const names=[R._dong,R._gungu,R._sido].filter(function(v,i,a){return v&&a.indexOf(v)===i;});
     for(const nm of names){ let prev; do{ prev=s;
@@ -438,6 +436,328 @@ function faqItems(R){
 }
 function faqJsonLd(R){
   return faqItems(R).map(function(it){return {"@type":"Question","name":it.q,"acceptedAnswer":{"@type":"Answer","text":it.a}};});
+}
+
+// ============================================================
+// 매장 원상복구 철거 (/d/) 모듈
+// ============================================================
+const HEADS_D = {
+  d1:["폐업과 이전, 마지막 관문","가게를 비우기 전에 남는 일"],
+  d2:["동네마다 사정이 다릅니다","원상복구도 지역을 봅니다"],
+  d3:["어디까지 뜯어야 할까","원상복구의 범위 정하기"],
+  d4:["계약서가 기준이 됩니다","임대차 조건부터 확인"],
+  d5:["철거는 이렇게 흘러갑니다","현장 확인부터 인계까지"],
+  d6:["업종에 따라 달라집니다","무엇을 하던 자리인가"],
+  d7:["폐기물, 그냥 두면 안 됩니다","치우는 것도 절차입니다"],
+  d8:["비용을 가르는 것들","같은 평수라도 다른 이유"],
+  d9:["일정이 곧 비용입니다","명도일 앞에서 서두르지 않으려면"],
+  d10:["분쟁 없이 마무리하려면","임대인과 얼굴 붉히지 않는 법"],
+  d11:["마지막까지 남는 인상","깨끗하게 비우는 일의 값"],
+  d12:["간판부터 떼어야 합니다","외부에 남은 것들"],
+  d13:["안전이 먼저입니다","사고 없이 끝내려면"],
+  d14:["보증금과 맞물립니다","정산까지 생각한다면"],
+  d15:["이전이라면 챙길 것이 더","두 곳을 동시에 볼 때"],
+  d16:["연락 전에 준비하실 것","무엇을 알려 주시면 되나요"],
+  faq:["자주 묻는 점","궁금한 점 먼저 풀고 가기"]
+};
+const SD = {
+d1:[
+"가게 문을 닫거나 자리를 옮길 때 마지막에 남는 일이 원상복구입니다. {F}에서 매장을 정리한다면, 들어올 때 손댄 만큼 되돌려 놓는 것이 임차인의 몫으로 남습니다. 인테리어와 간판, 바닥과 천장까지 어디까지 뜯어야 하는지가 관건입니다. 미루다 보면 명도일에 쫓겨 급하게 처리하게 되고, 그럴수록 손해가 커집니다.",
+"장사를 접는 결정은 어렵지만, 정작 힘든 것은 그다음입니다. {D}에서 매장을 비우려면 원상복구라는 절차를 거쳐야 하고, 이 과정이 생각보다 품이 많이 듭니다. 임대인과 범위를 두고 이야기가 엇갈리는 일도 흔합니다. 미리 기준을 잡아 두면 마무리가 훨씬 수월합니다.",
+"원상복구는 단순히 부수는 일이 아닙니다. 무엇을 남기고 무엇을 걷어낼지 정하는 판단이 먼저이고, 그 뒤에 작업이 따라옵니다. {G}에서 가게를 정리하는 분이라면 계약서와 현장 상태를 함께 놓고 봐야 합니다. 순서를 지키면 시간도 비용도 아낄 수 있습니다.",
+"{F}에서 임대차가 끝나갈 무렵이면 원상복구 이야기가 나옵니다. 처음 들어올 때 어떤 상태였는지, 그동안 무엇을 바꿨는지에 따라 되돌릴 범위가 달라집니다. {D} 일대에서 폐업이나 이전을 앞둔 분들이 가장 많이 묻는 대목이기도 합니다. 준비 없이 맞닥뜨리면 당황하기 쉬운 일입니다.",
+"임대차가 끝나가면 마음은 이미 다음을 향하지만, 발목을 잡는 것은 늘 뒤에 남은 일입니다. {F}의 매장을 비우려면 손댄 만큼 되돌려 놓아야 하고, 그 범위를 정하는 일이 먼저입니다. 간판 하나, 벽 한 칸에도 판단이 필요합니다. 급하게 시작하면 놓치는 부분이 생기기 마련입니다.",
+"폐업이든 확장 이전이든, 쓰던 자리를 넘기는 과정은 비슷합니다. {D}에서 매장을 정리하려면 임대인이 요구하는 상태까지 맞춰야 하고, 그 기준이 계약서에 담겨 있습니다. 문구가 모호하면 협의가 길어지기도 합니다. 시작 전에 한 번 짚고 가는 편이 훨씬 낫습니다."
+],
+d2:[
+"원상복구도 지역을 봅니다. {S}와 {G}는 건물의 형태와 상권의 성격이 다르고, {D}만 놓고 봐도 상가주택과 대형 상가의 사정이 같지 않습니다. 진입로가 좁으면 장비 반입부터 달라지고, 주변에 주거지가 붙어 있으면 작업 시간대도 조율해야 합니다. 그래서 현장을 직접 보는 일이 먼저입니다.",
+"같은 평수라도 {D}의 어느 건물이냐에 따라 작업이 달라집니다. 엘리베이터가 있는지, 폐기물을 내릴 동선이 확보되는지, 주차와 반출이 가능한지가 모두 변수입니다. {G} 상권을 아는 상태에서 접근하면 헛걸음이 줄어듭니다. 지역을 좁혀서 보는 이유가 여기에 있습니다.",
+"{D}는 {G} 안에서도 나름의 분위기를 가진 동네입니다. 오래된 건물이 많은지, 신축 상가 위주인지에 따라 원상복구의 기준선이 달라집니다. 건물주가 요구하는 수준도 지역 관행을 따라가는 경우가 적지 않습니다. {S} 전체를 한 묶음으로 보지 않는 편이 정확합니다.",
+"전국 어디나 똑같은 방식으로 접근하면 정작 우리 매장에 안 맞는 답이 나옵니다. {S} {G}, 그중에서도 {D}는 건물 구조와 이웃 상가의 사정이 제각각입니다. 소음과 분진을 어느 정도까지 감수할 수 있는지도 동네마다 다릅니다. 가까운 곳에서 확인하고 진행할 때 대응이 빠릅니다.",
+"건물이 오래됐는지 새것인지에 따라 손이 가는 정도가 다릅니다. {D}의 상가가 어떤 시기에 지어졌느냐가 배관과 전기 상태를 좌우하기 때문입니다. 예상 못 한 부분에서 시간이 걸리는 경우도 여기서 나옵니다. {S} 전체를 뭉뚱그리지 않고 현장을 보는 이유입니다.",
+"이웃 상가가 붙어 있는지도 중요한 변수입니다. 벽 하나를 사이에 두고 영업 중인 가게가 있다면 소음과 진동을 신경 써야 합니다. {G}처럼 상가가 촘촘한 곳에서는 이 조율이 작업만큼이나 큰 일이 됩니다. 지역 사정을 알고 접근하면 마찰이 줄어듭니다."
+],
+d3:[
+"원상복구의 범위는 계약서와 현장 상태가 함께 정합니다. 보통은 임차인이 설치한 것을 걷어내고 인수 당시 상태로 되돌리는 것을 뜻합니다. 다만 골조나 설비처럼 건물에 속한 부분은 그대로 두는 것이 일반적입니다. {D}의 매장이 어떤 상태로 들어왔는지 기억을 더듬어 보면 기준이 잡힙니다.",
+"어디까지 뜯어야 하는지는 늘 논쟁거리입니다. 간판과 사인물, 파티션과 붙박이 가구는 대체로 철거 대상입니다. 반면 바닥이나 벽면은 인수 당시에 이미 있던 것이라면 손대지 않아도 되는 경우가 많습니다. {G}에서 임대인과 미리 범위를 맞춰 두면 나중에 말이 달라지는 일을 막을 수 있습니다.",
+"모든 것을 다 부수는 것이 원상복구는 아닙니다. 오히려 필요 이상으로 걷어내면 비용만 늘고 임대인도 반기지 않습니다. 다음 임차인이 그대로 쓸 수 있는 부분은 남겨 두는 편이 서로에게 낫습니다. {D}의 현장을 함께 보면서 남길 것과 걷어낼 것을 나누는 작업이 먼저입니다.",
+"입주할 때 사진을 남겨 두었다면 이때 큰 힘이 됩니다. 그때의 상태가 곧 되돌려야 할 기준선이 되기 때문입니다. 자료가 없다면 계약서 문구와 현장 흔적을 근거로 범위를 정하게 됩니다. {D}에서 매장을 정리하려는 분이라면 이 자료부터 찾아보시길 권합니다.",
+"천장과 바닥은 특히 의견이 갈리는 부분입니다. 임차인이 새로 깐 마감재라면 걷어내는 것이 맞지만, 원래 있던 것이라면 그대로 두어도 됩니다. 시간이 지나면 어느 쪽이었는지 기억이 흐려지는 것이 문제입니다. {D}에서 이 대목을 두고 실랑이가 벌어지는 경우가 적지 않습니다.",
+"전기와 조명은 생각보다 손이 많이 갑니다. 매장 분위기에 맞춰 배선을 새로 끌어 쓴 경우가 많기 때문입니다. 이를 원래대로 정리하려면 마감까지 함께 손봐야 합니다. {G}에서 인테리어를 크게 했던 자리일수록 이 부분을 미리 확인해 두는 편이 좋습니다."
+],
+d4:[
+"원상복구 의무는 계약서에 어떻게 적혀 있느냐가 출발점입니다. 특약으로 범위를 정해 둔 경우도 있고, 원상회복이라는 한 줄만 있는 경우도 있습니다. 문구가 짧을수록 해석의 여지가 커지고 그만큼 협의가 필요해집니다. {D}의 매장 계약서를 꺼내 확인하는 일이 첫 단계입니다.",
+"임대차 계약에는 대개 원상회복 조항이 들어갑니다. 다만 그 문구가 실제로 무엇을 뜻하는지는 현장마다 달라집니다. 전 임차인이 남긴 시설을 그대로 받아 썼다면, 그 부분까지 책임질 이유는 없습니다. {G}에서 이런 사정이 얽힌 경우가 적지 않아 근거를 정리해 두는 것이 좋습니다.",
+"보증금 정산과 원상복구는 맞물려 있습니다. 복구가 끝나야 명도가 완료되고 그에 따라 정산이 이뤄지는 흐름입니다. 그래서 일정을 놓치면 금전적으로도 불리해집니다. {D}에서 계약 만료가 다가온다면 미리 움직이는 편이 안전합니다.",
+"계약서에 없는 요구가 나오는 경우도 있습니다. 이럴 때는 감정을 앞세우기보다 문서와 사진으로 이야기하는 편이 낫습니다. 무엇을 언제 설치했고 어떤 상태였는지가 정리되면 협의가 빨라집니다. {G}에서 마무리를 매끄럽게 하려면 기록이 곧 무기가 됩니다.",
+"원상회복 조항은 짧게 한 줄로 적히는 경우가 대부분입니다. 그래서 실제 범위는 협의로 정해지는 일이 많습니다. 이때 근거가 있는 쪽이 유리합니다. {D}에서 계약을 마무리한다면 문서부터 챙기시길 권합니다.",
+"권리금을 주고받으며 시설을 인수했다면 사정이 또 달라집니다. 전 임차인의 시설을 그대로 받은 것이라면 그 부분까지 되돌릴 의무가 있는지 따져 봐야 합니다. {G}에서 이런 구조로 들어온 매장이 꽤 됩니다. 계약 당시 자료가 남아 있는지 확인해 보세요."
+],
+d5:[
+"진행은 대체로 정해진 순서를 따릅니다. 먼저 연락을 주시면 매장 위치와 업종, 대략의 규모를 여쭙습니다. 그다음 현장을 직접 확인해 범위와 일정을 잡고, 작업에 들어가 폐기물 반출까지 마칩니다. 마지막으로 임대인 확인을 거쳐 인계하면 끝입니다.",
+"현장 확인 없이 진행하는 일은 권하지 않습니다. 사진만으로는 천장 위나 벽 안쪽 상태를 알기 어렵고, 반출 동선도 가늠이 안 됩니다. {D}의 매장이라면 직접 방문해 눈으로 보고 정리하는 편이 정확합니다. 그래야 중간에 말이 바뀌는 일이 없습니다.",
+"철거는 소음과 분진이 따르는 작업입니다. 그래서 주변 상가와 입주민에게 미리 알리고 시간대를 조율하는 과정이 들어갑니다. {G}처럼 상가가 밀집한 곳일수록 이 준비가 중요합니다. 서로 얼굴 붉히지 않고 끝내려면 배려가 앞서야 합니다.",
+"작업이 끝났다고 바로 마무리는 아닙니다. 바닥과 벽면을 정리하고 잔재를 치운 뒤, 임대인이 확인할 수 있는 상태로 만들어 두어야 합니다. {D}에서 명도 절차까지 감안하면 이 마무리가 은근히 중요합니다. 깨끗하게 비워진 자리는 그 자체로 협의를 쉽게 만듭니다.",
+"작업 순서는 대체로 안쪽에서 바깥으로 향합니다. 설비와 배선을 먼저 정리하고, 마감재를 걷어낸 뒤, 구조물을 해체하는 흐름입니다. 순서를 지켜야 안전하고 폐기물 분리도 수월합니다. {D}의 현장에서도 이 원칙은 같습니다.",
+"작업 전 단전·단수 처리가 선행되어야 합니다. 전기와 가스가 살아 있는 상태에서 손대는 것은 위험하기 때문입니다. 해지 신청에도 시간이 걸리니 미리 챙겨 두어야 합니다. {G}에서 일정을 잡을 때 이 부분을 빠뜨리는 경우가 많습니다."
+],
+d6:[
+"어떤 장사를 하던 자리인지에 따라 작업이 크게 갈립니다. 음식점은 주방 설비와 후드, 배관과 방수층까지 얽혀 있어 손이 많이 갑니다. 반면 사무실이나 소매점은 상대적으로 단순한 편입니다. {D}의 매장이 무엇을 하던 곳인지가 곧 첫 번째 기준입니다.",
+"카페나 음식점 자리는 급배수와 전기 설비가 복잡하게 들어가 있습니다. 이걸 어디까지 되돌릴지가 협의의 핵심이 되곤 합니다. 다음 임차인이 같은 업종이라면 오히려 남겨 두는 편이 나을 수도 있습니다. {G}에서 상황을 보고 판단하는 것이 실속 있습니다.",
+"미용실이나 학원처럼 칸을 많이 나눈 매장은 파티션 철거가 주된 작업이 됩니다. 벽을 세운 자리마다 마감과 배선이 따라오기 때문입니다. {D}에서 이런 형태의 매장이라면 도면이나 사진이 남아 있는지 확인해 보세요. 작업 계획을 세우는 데 큰 도움이 됩니다.",
+"업종을 알면 예상되는 변수도 함께 보입니다. 냉장·냉동 설비가 있었는지, 가스 배관을 손댔는지, 별도 전력을 끌어 썼는지 같은 것들입니다. {G}에서 오래 운영한 매장일수록 손댄 부분이 많아지기 마련입니다. 그래서 현장 확인이 먼저인 것입니다.",
+"편의점이나 소매점은 진열대와 간판이 주된 작업이 됩니다. 냉장 설비가 있었다면 전기 용량을 늘려 쓴 흔적도 정리해야 합니다. {D}에서 이런 형태였다면 비교적 단순하게 끝나는 편입니다. 다만 매장이 넓으면 그만큼 양이 늘어납니다.",
+"병원이나 약국처럼 특수 설비가 들어간 자리는 손이 더 갑니다. 별도 배관이나 차폐 시설이 있었다면 처리 방법이 달라지기 때문입니다. {G}에서 이런 업종의 자리를 정리한다면 현장 확인이 특히 중요합니다. 눈으로 보고 나서야 계획이 잡힙니다."
+],
+d7:[
+"철거하고 나온 자재는 그냥 버릴 수 없습니다. 건설폐기물은 정해진 절차에 따라 처리해야 하고, 이를 지키지 않으면 문제가 됩니다. 종류별로 나눠서 반출하고 적법하게 처리하는 과정까지가 작업의 일부입니다. {D}에서 진행하더라도 이 부분은 예외가 없습니다.",
+"폐기물 처리는 눈에 잘 안 보이지만 비용의 상당 부분을 차지합니다. 나오는 양과 종류에 따라 달라지고, 반출 동선이 나쁘면 손이 더 갑니다. {G}의 건물 사정에 따라 이 대목이 크게 갈리기도 합니다. 현장을 보고 나서야 제대로 가늠이 되는 이유입니다.",
+"분리 없이 뒤섞어 내보내면 처리가 어려워지고 결국 비용이 올라갑니다. 목재와 금속, 콘크리트와 일반 폐기물을 나누는 작업이 앞서야 합니다. 재활용이 가능한 것은 따로 빼는 편이 여러모로 낫습니다. {D}에서도 이 원칙은 똑같이 적용됩니다.",
+"작업이 끝난 뒤 자재를 그대로 두고 가는 경우가 종종 문제를 만듭니다. 임대인 입장에서는 치우지 않은 것이나 마찬가지로 보이기 때문입니다. 반출까지 확실히 끝내야 원상복구가 완료된 것입니다. {G}에서 마무리를 깔끔하게 해야 하는 이유가 여기 있습니다.",
+"폐기물 반출은 건물 규정과도 맞물립니다. 지정된 시간에만 화물 승강기를 쓸 수 있거나, 일정 시간 이후 작업이 금지된 곳도 있습니다. {D}의 상가에서 이런 제약을 미리 확인하지 않으면 일정이 밀립니다. 관리사무소와 사전 조율이 필요한 이유입니다.",
+"쓸 만한 집기는 따로 빼 두는 것도 방법입니다. 중고로 넘길 수 있는 것을 폐기물로 처리하면 아깝기 때문입니다. {G}에서 매장을 정리하며 이 부분으로 부담을 더는 분들이 있습니다. 무엇이 남길 만한지 현장에서 함께 봐 드립니다."
+],
+d8:[
+"같은 평수라도 비용이 달라지는 데는 이유가 있습니다. 무엇을 얼마나 걷어내는지, 폐기물이 얼마나 나오는지, 반출이 얼마나 수월한지가 모두 영향을 줍니다. {D}의 현장이 어떤 조건인지에 따라 편차가 생깁니다. 그래서 눈으로 보지 않고 답을 드리기가 어렵습니다.",
+"층수와 엘리베이터 유무는 생각보다 큰 변수입니다. 고층인데 화물 반출이 계단뿐이라면 손이 몇 배로 갑니다. 주차와 차량 진입이 어려운 곳도 마찬가지입니다. {G}의 건물 여건을 먼저 확인하는 까닭이 그것입니다.",
+"작업 가능한 시간대도 조건에 들어갑니다. 주변 상가가 영업 중이라 야간이나 주말에만 가능한 경우가 있기 때문입니다. {D}처럼 사람이 오가는 상권일수록 이런 제약이 붙기 쉽습니다. 일정을 넉넉히 잡을수록 선택지가 많아집니다.",
+"철거 범위를 줄이는 것이 곧 절약입니다. 남겨도 되는 것을 굳이 걷어내면 작업비와 폐기물 처리비가 함께 늘어납니다. 임대인과 협의해 남길 부분을 정하면 부담이 줄어듭니다. {D}에서 정리를 앞두고 있다면 이 협의를 먼저 해 보시길 권합니다.",
+"철거 난이도도 비용에 반영됩니다. 콘크리트를 깨야 하는지, 손으로 뜯어낼 수 있는지에 따라 장비와 인력이 달라지기 때문입니다. {D}의 매장이 어떤 방식으로 시공됐는지가 여기서 드러납니다. 오래 공들여 만든 자리일수록 걷어내는 데도 시간이 걸립니다.",
+"작업 물량이 한꺼번에 몰리는 시기도 영향을 줍니다. 계약이 몰리는 시점에는 일정 잡기가 빠듯해지기 때문입니다. {G}에서 명도일이 정해져 있다면 미리 연락 주시는 편이 유리합니다. 여유가 있어야 조건도 맞춰 볼 수 있습니다."
+],
+d9:[
+"일정을 촉박하게 잡으면 선택지가 사라집니다. 명도일이 코앞이면 조건을 따질 여유가 없어지고, 급하게 진행하다 놓치는 부분도 생깁니다. {D}에서 계약 만료가 정해져 있다면 여유를 두고 준비하는 편이 낫습니다. 시간이 곧 협상력입니다.",
+"철거는 하루 만에 끝나는 일이 아닌 경우가 많습니다. 규모와 범위에 따라 며칠이 걸리기도 하고, 폐기물 반출 일정까지 맞춰야 합니다. {G}의 건물 사정에 따라 작업 가능 시간이 제한되기도 합니다. 이런 변수를 감안해 일정을 잡아야 합니다.",
+"명도일과 작업 완료일 사이에 여유를 두는 것이 좋습니다. 임대인 확인 과정에서 보완 요구가 나올 수 있기 때문입니다. 마지막 날에 맞춰 끝내면 그런 여지가 없습니다. {D}에서 마무리까지 생각한다면 며칠 앞서 끝내 두는 편이 안전합니다.",
+"이전을 준비 중이라면 새 매장 일정과도 맞물립니다. 두 곳을 동시에 챙기려면 순서를 미리 정해 두어야 합니다. {G}에서 자리를 옮기는 분들이 자주 겪는 어려움입니다. 계획을 먼저 세우면 어느 쪽도 밀리지 않습니다.",
+"단전·단수 해지, 관리비 정산, 사업자 폐업 신고 같은 절차도 함께 돌아갑니다. 철거만 끝난다고 마무리되는 것이 아니라는 뜻입니다. {D}에서 매장을 접는다면 이 목록을 미리 적어 두시길 권합니다. 하나씩 지워 나가면 덜 헤맵니다.",
+"주말이나 공휴일이 끼면 실제 작업 가능일이 줄어듭니다. 달력을 놓고 세어 보면 생각보다 시간이 없는 경우가 많습니다. {G}에서 명도일을 기준으로 역산해 보면 언제 시작해야 할지 보입니다. 계획을 세우는 것만으로도 마음이 놓입니다."
+],
+d10:[
+"원상복구에서 분쟁이 생기는 지점은 대체로 범위입니다. 임대인은 더 많이, 임차인은 덜 걷어내고 싶어 하니 접점을 찾아야 합니다. 작업 전에 서로 확인하고 기록을 남기면 나중에 말이 달라지는 일이 줄어듭니다. {D}에서 마무리를 매끄럽게 하려면 이 절차가 중요합니다.",
+"작업 전후 사진을 남기는 습관이 도움이 됩니다. 어떤 상태에서 시작해 어떻게 마무리했는지가 남으면 근거가 분명해집니다. 구두로만 오간 약속은 나중에 기억이 엇갈리기 쉽습니다. {G}에서 임대인과 원만하게 끝내려면 기록이 뒷받침되어야 합니다.",
+"보증금 정산이 걸려 있으면 감정이 앞서기 쉽습니다. 그럴수록 계약서와 사진으로 차분히 이야기하는 편이 결과가 좋습니다. {D}에서 오래 장사한 자리라면 서로 아쉬움도 남기 마련입니다. 마지막까지 예의를 지키면 정리도 깔끔해집니다.",
+"작업 완료 후 임대인이 직접 확인하는 자리를 만드는 것이 좋습니다. 그 자리에서 이견이 있으면 바로 조율할 수 있기 때문입니다. 서면이나 문자로 확인을 남겨 두면 더 확실합니다. {G}에서 명도까지 매끄럽게 가려면 이 마지막 단계를 챙겨야 합니다.",
+"협의 내용은 문자로라도 남겨 두는 것이 좋습니다. 나중에 기억이 엇갈릴 때 근거가 되기 때문입니다. 말로만 오간 약속은 서로 다르게 기억하기 쉽습니다. {D}에서 마무리까지 매끄럽게 가려면 기록이 뒷받침되어야 합니다.",
+"임대인도 다음 임차인을 받아야 하는 입장입니다. 그 사정을 이해하고 접근하면 협의가 훨씬 부드러워집니다. 무엇을 남기면 서로 좋은지 함께 찾는 대화가 되면 결과도 낫습니다. {G}에서 오래 인연을 맺은 사이라면 더욱 그렇습니다."
+],
+d11:[
+"가게를 비우는 일은 마지막 인상을 남기는 과정이기도 합니다. 정리가 잘된 자리는 임대인에게도 다음 임차인에게도 좋게 남습니다. {D}에서 오래 장사한 자리라면 더욱 그렇습니다. 시작만큼이나 끝맺음이 중요한 이유입니다.",
+"장사를 접는 것이든 자리를 옮기는 것이든 마무리는 남습니다. 깔끔하게 정리하고 나오면 마음도 한결 가볍습니다. {G}에서 다음 자리를 준비 중이라면 더 그렇습니다. 뒤가 정리되어야 앞으로 나아가기 편합니다.",
+"원상복구는 부담스러운 일이지만 피할 수 없는 절차입니다. 그렇다면 제대로 알고 준비하는 편이 낫습니다. {D}의 매장 상황에 맞춰 범위와 일정을 잡으면 생각보다 수월하게 끝납니다. 혼자 고민하기보다 상의해 보시길 권합니다.",
+"많은 분들이 폐업을 결정한 뒤에야 원상복구를 떠올립니다. 그때는 이미 시간이 촉박한 경우가 많습니다. {G}에서 계약 만료가 다가온다면 미리 한 번 상의해 두는 것으로도 부담이 줄어듭니다. 아는 만큼 선택지가 생깁니다.",
+"정리를 마치고 문을 닫는 순간은 누구에게나 무겁습니다. 그래도 뒤가 깔끔하면 그 무게가 조금은 가벼워집니다. {D}에서 보낸 시간을 잘 마무리하는 일도 장사의 일부입니다. 마지막까지 챙기는 분들이 다음에도 잘 하십니다.",
+"원상복구를 부담으로만 볼 필요는 없습니다. 무엇을 되돌릴지 정리하다 보면 그동안의 운영이 한눈에 보이기도 합니다. {G}에서 다음 자리를 준비 중이라면 그 경험이 그대로 쓰입니다. 끝맺음이 곧 다음의 시작이 됩니다."
+],
+d12:[
+"간판은 생각보다 손이 많이 가는 품목입니다. 벽에 앵커를 박아 고정한 경우가 대부분이라, 떼어낸 뒤 벽면 보수까지 따라옵니다. 돌출 간판이라면 도로 쪽으로 작업 공간을 확보해야 해서 시간대도 조율해야 합니다. {D}에서 눈에 띄는 자리일수록 이 부분을 미리 챙겨 두는 편이 좋습니다.",
+"옥외광고물은 설치할 때 신고를 거친 경우가 많습니다. 철거할 때도 그에 맞춰 정리해 두면 나중에 번거로운 일이 줄어듭니다. 관할 구청에 확인해 보면 어떤 절차가 남았는지 알 수 있습니다. {G}에서 오래 걸어 둔 간판이라면 서류가 어디 있는지부터 찾아보세요.",
+"간판을 떼고 나면 벽면에 자국이 남습니다. 색이 바랜 부분과 그렇지 않은 부분이 뚜렷하게 갈리기 때문입니다. 임대인이 이 부분까지 정리를 요구하는 경우가 있어 미리 이야기해 두는 편이 낫습니다. {D}의 건물 외벽 상태에 따라 손이 더 가기도 합니다.",
+"LED나 네온처럼 전기가 들어간 간판은 배선까지 정리해야 합니다. 전원을 끌어온 경로를 그대로 두면 다음 임차인이 곤란해집니다. 어디서 어떻게 끌어왔는지 기억이 안 난다면 현장에서 확인합니다. {G}에서 이런 형태가 흔해 늘 함께 살펴봅니다.",
+"천막이나 어닝, 배너 거치대도 함께 정리 대상이 됩니다. 눈에 익어서 잊기 쉬운 것들입니다. 막상 명도일에 지적을 받으면 급하게 처리하게 되고 그만큼 손해입니다. {D}에서 매장을 정리한다면 외부부터 한 바퀴 둘러보시길 권합니다.",
+"간판만 따로 떼는 작업도 가능합니다. 내부는 그대로 두고 외부만 정리하면 되는 경우가 있기 때문입니다. 이럴 때는 작업이 단순해지고 부담도 줄어듭니다. {G}에서 어떤 조건인지 먼저 알려 주시면 그에 맞춰 안내해 드립니다."
+],
+d13:[
+"철거는 사고 위험이 따르는 작업입니다. 무거운 자재를 다루고 높은 곳에 올라가는 일이 있기 때문입니다. 안전 장비를 갖추고 절차를 지키는 것이 기본이고, 그래야 작업자도 건물도 무사합니다. {D}의 현장에서도 이 원칙은 예외가 없습니다.",
+"작업 중 건물에 손상이 생기면 그것도 책임 문제가 됩니다. 옆 가게 벽에 금이 가거나 공용부가 상하면 일이 커집니다. 그래서 시작 전에 주변 상태를 사진으로 남겨 둡니다. {G}처럼 상가가 붙어 있는 곳에서는 특히 중요한 절차입니다.",
+"보험 가입 여부를 확인하는 것도 필요합니다. 만에 하나 문제가 생겼을 때 대처가 달라지기 때문입니다. 작업 범위와 규모에 따라 어떤 준비가 되어 있는지 물어보시는 것이 좋습니다. {D}에서 진행하더라도 이 부분은 짚고 넘어가야 합니다.",
+"분진과 소음은 완전히 없앨 수는 없지만 줄일 수는 있습니다. 가림막을 세우고 물을 뿌리며 작업하면 주변 피해가 확연히 줄어듭니다. {G}의 이웃 상가를 생각하면 이런 준비가 곧 배려입니다. 마찰 없이 끝내는 데 큰 몫을 합니다.",
+"공용 통로를 쓰는 작업이라면 관리사무소와 미리 이야기해야 합니다. 엘리베이터 보양이나 통로 보호가 필요한 경우가 있기 때문입니다. {D}의 건물 규정을 확인하지 않고 시작하면 중간에 제지당하기도 합니다. 준비가 곧 일정입니다.",
+"석면이 의심되는 자재가 나오면 절차가 완전히 달라집니다. 오래된 건물의 천장재나 벽재에서 발견되는 경우가 있습니다. 이럴 때는 별도의 조사와 처리가 필요합니다. {G}의 노후 상가라면 현장 확인 때 이 부분도 함께 봅니다."
+],
+d14:[
+"보증금을 돌려받는 시점은 원상복구 완료와 맞물립니다. 임대인이 확인하고 이견이 없어야 정산이 진행되기 때문입니다. 그래서 마무리를 잘하는 것이 곧 금전 문제와 이어집니다. {D}에서 계약을 끝맺는다면 이 흐름을 염두에 두세요.",
+"임대인이 복구비를 보증금에서 빼겠다고 하는 경우가 있습니다. 이때 금액이 타당한지는 근거를 놓고 따져 봐야 합니다. 직접 정리하는 편이 나은지, 맡기는 편이 나은지도 비교해 볼 만합니다. {G}에서 이런 상황이라면 서두르지 말고 확인부터 하세요.",
+"협의가 끝내 안 되면 분쟁 절차로 넘어가기도 합니다. 다만 그 과정은 시간과 비용이 만만치 않습니다. 가능하면 그 전에 접점을 찾는 편이 서로에게 낫습니다. {D}에서도 대부분은 대화로 정리됩니다.",
+"작업 완료 사진과 확인서를 남겨 두면 나중이 편합니다. 시간이 지나 이야기가 달라져도 근거가 있으면 대응이 됩니다. 문자 한 통이라도 기록으로 남깁니다. {G}에서 마무리까지 신경 쓰는 분들이 결국 손해를 덜 봅니다.",
+"법적인 판단이 필요한 사안이라면 전문가와 상의하시는 것이 맞습니다. 여기서 드리는 이야기는 일반적인 흐름에 대한 안내입니다. 계약 내용과 사정이 저마다 달라 일률적으로 말하기 어렵습니다. {D}의 구체적인 상황은 현장에서 함께 살펴보겠습니다.",
+"임차인이 여러 번 바뀐 자리는 책임 범위가 복잡해집니다. 누가 무엇을 설치했는지 추적이 어렵기 때문입니다. 이럴수록 계약서와 인수 자료가 힘을 발휘합니다. {G}에서 시설을 인수해 들어왔다면 그때 자료를 찾아보세요."
+],
+d15:[
+"이전을 준비 중이라면 두 곳의 일정이 맞물립니다. 새 매장 공사와 옛 매장 철거가 겹치면 정신이 없어집니다. 어느 쪽을 먼저 할지 순서를 정해 두면 훨씬 수월합니다. {D}에서 자리를 옮기는 분들이 자주 겪는 대목입니다.",
+"쓰던 집기 중 가져갈 것과 버릴 것을 먼저 나눠야 합니다. 새 매장에서 그대로 쓸 수 있는 것이 있다면 따로 빼 둡니다. 이 작업을 먼저 하면 철거 물량도 줄어듭니다. {G}에서 이전을 앞두고 있다면 목록부터 만들어 보세요.",
+"영업 공백을 줄이려면 일정을 촘촘히 짜야 합니다. 옛 자리를 비우는 날과 새 자리를 여는 날 사이가 벌어질수록 손해이기 때문입니다. {D}에서 이 간격을 좁히려면 미리 움직이는 수밖에 없습니다. 계획이 곧 매출입니다.",
+"이전이라면 원상복구 범위를 줄일 여지가 생기기도 합니다. 다음 임차인이 이미 정해져 있고 같은 업종이라면 시설을 남기는 편이 서로 좋기 때문입니다. {G}에서 임대인과 이 부분을 먼저 상의해 보세요. 협의만 되면 부담이 크게 줄어듭니다.",
+"주소 이전에 따라오는 행정 절차도 있습니다. 사업자등록 정정, 각종 신고, 통신과 결제 장비 이설까지 챙길 것이 여럿입니다. {D}에서 이사만 신경 쓰다 이 부분을 놓치는 경우가 많습니다. 목록을 만들어 두면 빠뜨리지 않습니다.",
+"카드단말기나 포스 같은 결제 장비도 함께 옮겨야 합니다. 가맹 정보의 주소가 바뀌기 때문에 별도 처리가 필요합니다. 철거 일정과 맞물려 진행하면 공백을 줄일 수 있습니다. {G}에서 이전을 준비한다면 이 부분도 함께 상의해 주세요."
+],
+d16:[
+"연락 주시기 전에 몇 가지만 정리해 두면 이야기가 빠릅니다. 매장 위치와 대략의 면적, 어떤 업종이었는지, 계약 만료일이 언제인지입니다. 이 정도만 있어도 방향은 잡힙니다. {D}에서 어떤 상황인지 편하게 알려 주세요.",
+"계약서를 손에 들고 계시면 훨씬 정확해집니다. 원상회복 관련 문구가 어떻게 적혀 있는지가 범위를 정하는 출발점이기 때문입니다. 사진으로 보내 주셔도 됩니다. {G}에서 준비가 어렵다면 현장에서 함께 확인해도 괜찮습니다.",
+"입주 당시 사진이 남아 있다면 큰 도움이 됩니다. 그때 어떤 상태였는지가 되돌릴 기준이 되기 때문입니다. 휴대폰 앨범을 거슬러 보면 의외로 남아 있는 경우가 많습니다. {D}에서 오래 장사한 자리라면 한번 찾아보세요.",
+"층수와 엘리베이터 유무, 주차 가능 여부도 알려 주시면 좋습니다. 반출 동선이 작업 계획을 크게 좌우하기 때문입니다. 건물 관리 규정에 작업 시간 제한이 있는지도 확인해 두면 좋습니다. {G}의 상가는 이런 조건이 제각각입니다.",
+"급하지 않아도 미리 물어보시는 것을 권합니다. 계약 만료가 몇 달 남았더라도 대략의 그림을 알아 두면 마음이 놓이기 때문입니다. 준비할 시간이 있으면 선택지도 늘어납니다. {D}에서 정리를 고민 중이라면 부담 없이 연락 주세요.",
+"현장 확인은 오래 걸리지 않습니다. 매장을 한 바퀴 둘러보고 범위와 일정을 함께 정리하는 정도입니다. 그 자리에서 궁금한 점을 물어보셔도 됩니다. {G} 어디든 방문해 확인해 드립니다."
+]
+};
+const SENT_D={};
+for(const id in SD){const set=[];for(const v of SD[id]){v.split(/(?<=[.!?])\s+/).forEach(function(x){x=x.trim();if(x)set.push(x);});}SENT_D[id]=set;}
+const RLINE_D=[
+ "{G} {D}에서도 이런 사정은 크게 다르지 않습니다.",
+ "{S} 안에서도 {D}는 건물 여건이 제각각인 동네입니다.",
+ "{D}에서 매장을 정리한다면 이 점을 먼저 짚어 두면 좋습니다.",
+ "{G}의 상가 구조를 떠올리면 이해가 빠릅니다.",
+ "{D} 일대의 현장을 보면 더 분명해집니다.",
+ "{S} {G}에서 가게를 접어 본 분이라면 고개가 끄덕여질 이야기입니다.",
+ "{D}의 매장 사정에 비춰 보면 더 와닿습니다.",
+ "{G} 근처에서도 비슷한 경우를 어렵지 않게 봅니다.",
+ "{D}에서 오래 장사해 온 분들은 이 대목에 공감하실 겁니다.",
+ "{S} {D}의 골목을 떠올리면 그림이 더 선명해집니다.",
+ "{G} 안에서도 {D}는 조금 다른 여건을 가졌습니다.",
+ "{D}의 가게라면 한 번쯤 마주치는 장면입니다.",
+ "{S} {G} 일대의 건물 사정을 생각하면 수긍이 갑니다.",
+ "{D}에서 처음 겪는 분께는 특히 낯선 부분입니다.",
+ "{G}에서 임대차를 마무리해 보면 자연히 알게 되는 사실입니다.",
+ "{D}의 현장을 직접 보면 판단이 훨씬 쉬워집니다.",
+ "{S}에서도 {D}만의 사정은 따로 있습니다.",
+ "{D} 거리의 가게들도 대부분 이 과정을 지나왔습니다.",
+ "{D}처럼 상가가 붙어 있는 곳일수록 배려가 필요합니다.",
+ "{G}에서 가게를 정리해 본 사장님이라면 익숙한 고민일 것입니다."
+];
+const FAQ_D=[
+ {q:["원상복구는 어디까지 해야 하나요?","{D} 매장인데 어느 범위까지 철거해야 하나요?","임차인이 되돌려야 할 범위가 어떻게 되나요?"],
+  a:["계약서 내용과 인수 당시 상태가 기준이 됩니다. 임차인이 설치한 간판·파티션·붙박이 시설은 대체로 철거 대상이고, 건물에 속한 골조나 기본 설비는 그대로 두는 것이 일반적입니다. 입주 당시 사진이 있다면 범위를 정하는 데 큰 도움이 됩니다.","모두 부수는 것이 원상복구는 아닙니다. 다음 임차인이 쓸 수 있는 부분까지 걷어내면 비용만 늘어납니다. 현장을 함께 보면서 남길 것과 걷어낼 것을 나누는 작업이 먼저입니다.","들어올 때의 모습이 곧 되돌릴 기준선입니다. 그동안 새로 만든 것은 정리 대상이고, 원래 있던 것은 손대지 않아도 되는 경우가 많습니다. 판단이 어려우면 현장에서 함께 짚어 드립니다."]},
+ {q:["철거하는 데 얼마나 걸리나요?","작업 기간은 어느 정도로 잡아야 하나요?","명도일까지 시간이 빠듯한데 가능할까요?"],
+  a:["규모와 범위에 따라 달라집니다. 작은 매장은 하루에 끝나기도 하지만, 주방 설비가 얽힌 음식점이나 칸을 많이 나눈 매장은 며칠이 걸립니다. 폐기물 반출 일정과 건물의 작업 가능 시간대도 함께 봐야 정확합니다.","명도일에 딱 맞추기보다 며칠 여유를 두시길 권합니다. 임대인 확인 과정에서 보완 요구가 나올 수 있기 때문입니다.","단전·단수 해지에도 시간이 걸리므로 이를 포함해 역산해야 합니다. 주말이나 공휴일이 끼면 실제 작업일이 줄어드니 달력을 놓고 세어 보시길 권합니다."]},
+ {q:["비용은 어떻게 정해지나요?","같은 평수인데 왜 견적이 다른가요?","비용을 줄일 방법이 있을까요?"],
+  a:["철거 범위와 폐기물 발생량, 반출 동선이 주된 변수입니다. 층수와 엘리베이터 유무, 차량 진입 가능 여부에 따라서도 크게 달라집니다. 그래서 현장을 보지 않고 정확한 답을 드리기가 어렵습니다.","범위를 줄이는 것이 곧 절약입니다. 임대인과 협의해 남겨도 되는 부분을 정하면 작업비와 처리비가 함께 줄어듭니다.","철거 난이도도 반영됩니다. 콘크리트를 깨야 하는지 손으로 뜯을 수 있는지에 따라 장비와 인력이 달라지기 때문입니다. 쓸 만한 집기를 따로 빼 두면 처리 물량이 줄어 부담이 가벼워집니다."]},
+ {q:["폐기물은 어떻게 처리하나요?","나온 자재는 알아서 치워 주시나요?","작업 후 남는 것은 어떻게 되나요?"],
+  a:["건설폐기물은 정해진 절차에 따라 종류별로 나눠 반출하고 적법하게 처리합니다. 반출까지 끝나야 원상복구가 완료된 것으로 봅니다. 자재를 남겨 두고 가면 임대인 입장에서는 치우지 않은 것과 같습니다.","분리 없이 뒤섞으면 처리가 어려워지고 비용도 올라갑니다. 재활용이 가능한 것은 따로 빼는 편이 여러모로 낫습니다.","반출은 건물 규정과도 맞물립니다. 화물 승강기 사용 시간이 정해져 있거나 야간 작업이 금지된 곳도 있어 관리사무소와 미리 조율합니다."]},
+ {q:["임대인과 범위가 안 맞으면 어떻게 하나요?","요구가 과하다고 느껴지는데 방법이 있을까요?","시설을 인수해서 들어왔는데 그것도 제 책임인가요?"],
+  a:["계약서 문구와 입주 당시 자료를 근거로 이야기하는 것이 가장 확실합니다. 전 임차인이 남긴 시설을 그대로 받아 썼다면 그 부분까지 책임질 이유는 없습니다. 작업 전후 사진을 남겨 두면 근거가 분명해집니다.","감정을 앞세우기보다 문서로 정리해 협의하는 편이 결과가 좋습니다. 작업 완료 후 임대인이 직접 확인하는 자리를 만들면 이견을 바로 조율할 수 있습니다.","권리금을 주고 시설을 인수한 경우라면 사정이 다릅니다. 계약 당시 자료가 남아 있는지 먼저 확인해 보세요. 협의 내용은 문자로라도 남겨 두는 것이 나중을 위해 안전합니다."]}
+];
+
+const DESC_D=[
+ "{F} 매장 원상복구 철거 안내. 폐업·이전 시 범위 산정부터 철거, 폐기물 반출과 임대인 확인까지 {D} 현장에 맞춰 정리해 드립니다.",
+ "{D}에서 가게를 정리하시나요. 계약서와 현장 상태를 함께 보고 원상복구 범위를 잡습니다. {G} 상권 여건에 맞춘 철거·원상복구 안내입니다.",
+ "{F} 원상복구 철거. 어디까지 걷어내야 하는지, 일정은 어떻게 잡아야 하는지 현장 확인 후 차분히 안내해 드립니다."
+];
+const CTA_TD=[
+ "{D} 매장, 정리하시나요?",
+ "{D}에서 원상복구가 필요하다면",
+ "{G} 폐업·이전 준비 중이라면",
+ "{D}의 마지막 정리를 함께"
+];
+const CTA_BD=[
+ "매장 위치와 업종, 대략의 규모만 알려 주세요. {D} 현장을 확인하고 범위와 일정을 함께 잡아 드립니다.",
+ "계약 만료일이 정해져 있다면 서두르지 마시고 먼저 상의해 주세요. {G} 어디든 방문해 확인합니다.",
+ "무엇을 남기고 무엇을 걷어낼지부터 정리해 드립니다. {D} 매장 상황에 맞춰 안내합니다."
+];
+function buildArticleD(R){
+  const h = (id)=>esc(applySyn(pick(HEADS_D[id], hash(R.s+"d"+id)), R._syn));
+  const compose = (id)=>{
+    const p=pick(SD[id], hash(R.s+"d"+id));
+    const rl=pick(RLINE_D, hash(R.s+"d"+id+"r"));
+    return esc(fill(p+" "+rl, R));
+  };
+  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+(ICON_D[id]||"🧱")+"</span>"+h(id)+"</h2><p>"+compose(id)+"</p>";
+
+  const KB1=["{D} 어디서나 매장 원상복구 철거를 현장 확인 후 진행합니다.","{D} 전역으로 방문해 폐업·이전 매장을 정리합니다.","{D} 매장까지 찾아가 철거 범위부터 함께 짚어 드립니다."];
+  const KB2=["계약서와 인수 당시 상태를 기준으로 걷어낼 범위를 함께 정합니다.","무엇을 남기고 무엇을 뜯을지 계약 조건에 맞춰 나눕니다.","입주 당시 자료를 근거로 되돌릴 선을 명확히 잡습니다."];
+  const KB3=["철거부터 폐기물 반출, 임대인 확인까지 {G} 한 흐름으로 이어집니다.","작업과 반출, 마무리 확인을 {G}에서 끊김 없이 처리합니다.","현장 정리와 인계까지 {G} 안에서 한 번에 끝냅니다."];
+  const keybox="<div class='keybox'><div class='keybox-t'>📜 한눈에 보기</div><ul>"+
+    "<li>"+esc(fill(pick(KB1,hash(R.s+"dkb1")),R))+"</li>"+
+    "<li>"+esc(fill(pick(KB2,hash(R.s+"dkb2")),R))+"</li>"+
+    "<li>"+esc(fill(pick(KB3,hash(R.s+"dkb3")),R))+"</li>"+
+    "</ul></div>";
+  const compare="<div class='compare'>"+
+    "<div class='cmp'><div class='cmp-ic c-juchil'>🧱</div><div class='cmp-t'>전체 원상복구</div><div class='cmp-d'>"+esc(fill(pick(["인수 당시 상태로 되돌립니다. {D}에서 임대인이 빈 상태를 요구할 때 필요합니다.","들어오기 전 모습으로 완전히 복원합니다. {D}에서 계약서에 명시된 경우에 해당합니다.","시설을 모두 걷어내고 빈 공간으로 넘깁니다. {D}의 신축 상가에서 자주 요구됩니다."],hash(R.s+"dc1")),R))+"</div></div>"+
+    "<div class='cmp-vs'>VS</div>"+
+    "<div class='cmp'><div class='cmp-ic c-gunchung'>🪚</div><div class='cmp-t'>부분 철거</div><div class='cmp-d'>"+esc(fill(pick(["남길 것은 두고 필요한 부분만 걷어냅니다. 다음 임차인이 정해진 {D} 매장에 알맞습니다.","쓸 수 있는 시설은 그대로 둡니다. {D}에서 같은 업종이 이어받을 때 유리합니다.","협의된 범위만 정리합니다. {D}의 오래된 상가에서 흔한 방식입니다."],hash(R.s+"dc2")),R))+"</div></div>"+
+    "</div>";
+  const FW=[["위치·업종·규모","범위·일정","폐기물 처리","임대인 확인"],
+            ["전화 한 통","눈으로 확인","안전하게 해체","깨끗하게 인계"],
+            ["매장 사정 청취","남길 것 정리","분리 반출","마무리 점검"]];
+  const fw=FW[hash(R.s+"dfw")%FW.length];
+  const flow="<div class='flow'>"+
+    "<div class='fstep'><span class='fic c-juchil'>🍵</span><b>상담</b><i>"+fw[0]+"</i></div><div class='farr'>→</div>"+
+    "<div class='fstep'><span class='fic c-gunchung'>🔍</span><b>현장 확인</b><i>"+fw[1]+"</i></div><div class='farr'>→</div>"+
+    "<div class='fstep'><span class='fic c-cheong'>⚒️</span><b>철거·반출</b><i>"+fw[2]+"</i></div><div class='farr'>→</div>"+
+    "<div class='fstep'><span class='fic c-chija'>🪷</span><b>정리·인계</b><i>"+fw[3]+"</i></div>"+
+    "</div>";
+  const callout="<div class='callout'><span class='co-ic'>🪔</span><p>"+esc(fill(pick(RLINE_D,hash(R.s+"dtip")),R))+"</p></div>";
+
+  const ord=shuffle(["d2","d3","d4","d5","d6","d7","d8","d9","d10","d12","d13","d14","d15","d16"], hash(R.s+"dord")).slice(0,11);
+  let items=ord.map(SEC);
+  const vis=shuffle([keybox,compare,flow,callout], hash(R.s+"dvis")).slice(0,3);
+  const base=[0, 2+(hash(R.s+"dj0")%2), 5+(hash(R.s+"dj1")%2)];
+  const ins=vis.map(function(b,i){var p=base[i]; if(p>items.length)p=items.length; return {b:b,p:p};}).sort(function(a,b){return b.p-a.p;});
+  ins.forEach(function(x){ items.splice(x.p,0,x.b); });
+  let html = "<p class=lead>"+compose("d1")+"</p>";
+  html += items.join("");
+  html += "<h2><span class='h2ic c-cheong'>🪔</span>"+esc(applySyn(pick(HEADS_D.faq,hash(R.s+"dfaq")),R._syn))+"</h2><div class=faq>";
+  shuffle(faqItemsD(R), hash(R.s+"dfqo")).slice(0,3).forEach((it,i)=>{
+    html += "<details"+(i===0?" open":"")+"><summary>"+esc(it.q)+"</summary><p>"+esc(it.a)+"</p></details>";
+  });
+  html += "</div>";
+  html += "<h2><span class='h2ic c-juchil'>🌙</span>"+(hash(R.s+"dend")%2?"마무리하며":"끝으로")+"</h2><p>"+compose("d11")+"</p>";
+  return html;
+}
+const ICON_D={d2:"⛰️",d3:"📐",d4:"📜",d5:"⚒️",d6:"🏮",d7:"♻️",d8:"🧮",d9:"⏳",d10:"🤝",d11:"🌙",d12:"🪧",d13:"🛡️",d14:"🪙",d15:"🚚",d16:"🧭"};
+function faqItemsD(R){
+  return FAQ_D.map(function(f,i){
+    const q=fill(pick(f.q,hash(R.s+"dfq"+i)),R);
+    const a=fill(pick(f.a,hash(R.s+"da"+i))+" "+pick(RLINE_D,hash(R.s+"dfa"+i)),R);
+    return {q:q,a:a};
+  });
+}
+function faqJsonLdD(R){
+  return faqItemsD(R).map(function(it){return {"@type":"Question","name":it.q,"acceptedAnswer":{"@type":"Answer","text":it.a}};});
+}
+function demolitionPage(R){
+  const seed=hash("d:"+R.s);
+  const pub=publishedDate(seed), mod=modifiedDate(seed);
+  const T=[
+    (R._gungu?R._gungu+" ":"")+R._dong+" 매장 원상복구 철거 — 폐업·이전 정리 | "+BRAND,
+    R._dong+" 원상복구 철거 "+(R._gungu?R._gungu+" ":"")+"인테리어 철거·폐기물 처리 | "+BRAND,
+    R._dong+" 상가 원상복구 어디까지? "+R._sido+(R._gungu?" "+R._gungu:"")+" 방문 확인 | "+BRAND
+  ];
+  const title=T[seed%3];
+  const desc=fill(pick(DESC_D,seed),R)+" 상담 "+PHONE+".";
+  const url=SITE+"/d/"+encodeURIComponent(R.s);
+  const sibs=(GROUPS.get(R._sido+"|"+R._gungu)||[]).filter(x=>x.s!==R.s).slice(0,12);
+  const near=sibs.length?("<div class=near><h3>📍 "+esc(R._gungu||R._sido)+" 다른 동네</h3><div class=g>"+
+     sibs.map(x=>"<a href=\"/d/"+x.s+"\">"+esc(x._dong)+"</a>").join("")+
+     "</div></div>"):"";
+  const xlink="<div class=near><h3>🔗 함께 보기</h3><div class=g>"+
+     "<a href=\"/r/"+R.s+"\">"+esc(R._dong)+" 카드단말기 설치 →</a></div></div>";
+  const body =
+   "<div class='bgart'>"+bgArt()+"</div>"+
+   "<div class='col rpage'>"+
+   "<nav class='crumb2'>"+
+     "<a href=\"/\">🏠 홈</a><span class=sep>›</span>"+
+     "<a href=\"/sido/"+R._sidoSlug+"\">"+esc(R._sido)+"</a><span class=sep>›</span>"+
+     (R._gungu?("<a href=\"/sigungu/"+R._gunguSlug+"\">"+esc(R._gungu)+"</a><span class=sep>›</span>"):"")+
+     "<span class=cur>🧱 "+esc(R._dong)+" 원상복구</span>"+
+   "</nav>"+
+   "<article>"+
+     heroBanner(photoForD(seed), "🧱 "+esc(R.n), R._dong+" 매장 원상복구 철거")+
+     "<div class='meta2'><span>📜 발행 <b>"+korDate(pub)+"</b></span><span>🔄 수정 <b>"+korDate(mod)+"</b></span><span>📍 "+esc(R._sido)+"</span></div>"+
+     buildArticleD(R)+
+     "<div class=cta><div class=t>"+esc(fill(pick(CTA_TD,hash(R.s+"dct")),R))+"</div><p>"+esc(fill(pick(CTA_BD,hash(R.s+"dcb")),R))+"</p><a href=\"tel:"+PHONE_TEL+"\">전화 상담 "+PHONE+"</a></div>"+
+     xlink+near+
+   "</article></div>";
+  const jsonld=[
+   {"@context":"https://schema.org","@type":"Article",
+    "headline":R._dong+" 매장 원상복구 철거 안내","inLanguage":"ko-KR",
+    "datePublished":isoDate(pub),"dateModified":isoDate(mod),
+    "author":{"@type":"Organization","name":BRAND},"publisher":{"@type":"Organization","name":BRAND},
+    "mainEntityOfPage":url,"image":photoForD(seed),"about":R.n+" 매장 원상복구 철거",
+    "speakable":{"@type":"SpeakableSpecification","cssSelector":[".lead",".keybox"]}},
+   {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+     {"@type":"ListItem","position":1,"name":"홈","item":SITE+"/"},
+     {"@type":"ListItem","position":2,"name":R._sido},
+     {"@type":"ListItem","position":3,"name":R._gungu||R._sido},
+     {"@type":"ListItem","position":4,"name":R._dong+" 원상복구","item":url}]},
+   {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqJsonLdD(R)},
+   {"@context":"https://schema.org","@type":"HowTo","name":R._dong+" 매장 원상복구 절차","step":[
+     {"@type":"HowToStep","position":1,"name":"상담","text":"매장 위치와 업종, 대략의 규모를 알려주시면 안내합니다."},
+     {"@type":"HowToStep","position":2,"name":"현장 확인","text":"직접 방문해 철거 범위와 일정을 정합니다."},
+     {"@type":"HowToStep","position":3,"name":"철거·반출","text":"작업 후 폐기물을 종류별로 나눠 적법하게 처리합니다."},
+     {"@type":"HowToStep","position":4,"name":"정리·인계","text":"현장을 정리하고 임대인 확인까지 마칩니다."}]},
+   {"@context":"https://schema.org","@type":"Service","serviceType":"매장 원상복구 철거","name":R._dong+" 매장 원상복구 철거","provider":{"@type":"Organization","name":BRAND,"telephone":PHONE},"areaServed":{"@type":"Place","name":R.n},"description":desc}
+  ];
+  return shell({title,desc,url,article:true,jsonld,image:photoForD(seed)}, body);
 }
 
 // ---------- 공통 HTML ----------
@@ -959,6 +1279,7 @@ function regionPage(R){
      heroBanner(photoFor(seed), "📍 "+esc(R.n), R._dong+" 카드단말기 설치 안내")+
      "<div class='meta2'><span>📜 발행 <b>"+korDate(pub)+"</b></span><span>🔄 수정 <b>"+korDate(mod)+"</b></span><span>📍 "+esc(R._sido)+"</span></div>"+
      buildArticle(R)+
+     "<div class=near><h3>\ud83d\udd17 \ud568\uaed8 \ubcf4\uae30</h3><div class=g><a href=\"/d/"+R.s+"\">"+esc(R._dong)+" \ub9e4\uc7a5 \uc6d0\uc0c1\ubcf5\uad6c \ucca0\uac70 \u2192</a></div></div>"+
      "<div class=cta><div class=t>"+esc(fill(pick(CTA_T,hash(R.s+"ct")),R))+"</div><p>"+esc(fill(pick(CTA_B,hash(R.s+"cb")),R))+"</p><a href=\"tel:"+PHONE_TEL+"\">전화 상담 "+PHONE+"</a></div>"+
      near+
    "</article></div>";
@@ -1094,22 +1415,30 @@ function sitemap(){
     const mod=modifiedDate(hash(r.s));
     u+="<url><loc>"+SITE+"/r/"+r.s+"</loc><lastmod>"+isoDate(mod)+"</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>";
   }
+  for(const r of REGIONS){
+    const dm=modifiedDate(hash("d:"+r.s));
+    u+="<url><loc>"+SITE+"/d/"+r.s+"</loc><lastmod>"+isoDate(dm)+"</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>";
+  }
   return u+"</urlset>";
 }
 function rfc822(d){ return d.toUTCString(); }
 function rssFeed(){
   const now=new Date();
-  const list=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,50);
+  const byDate=function(a,b){return b.m-a.m;};
+  const listR=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s)),d:false};}).sort(byDate).slice(0,25);
+  const listD=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash("d:"+r.s)),d:true};}).sort(byDate).slice(0,25);
+  const list=listR.concat(listD).sort(byDate);
   let x='<?xml version="1.0" encoding="UTF-8"?>';
   x+='<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>';
   x+='<title>'+BRAND+' — 카드단말기 동네별 안내</title>';
   x+='<link>'+SITE+'/</link>';
   x+='<atom:link href="'+SITE+'/rss.xml" rel="self" type="application/rss+xml"/>';
-  x+='<description>전국 시·군·구·읍·면·동 카드단말기 설치 안내. 유선·무선·포스·간편결제, 동네 상황에 맞춘 기준으로.</description>';
+  x+='<description>전국 시·군·구·읍·면·동 카드단말기 설치 및 매장 원상복구 철거 안내.</description>';
   x+='<language>ko</language><lastBuildDate>'+rfc822(now)+'</lastBuildDate><ttl>1440</ttl>';
-  list.forEach(function(o){ const r=o.r, u=SITE+"/r/"+r.s, desc=fill(pick(DESC,hash(r.s)),r);
+  list.forEach(function(o){ const r=o.r, u=SITE+(o.d?"/d/":"/r/")+r.s,
+      desc=o.d?fill(pick(DESC_D,hash("d:"+r.s)),r):fill(pick(DESC,hash(r.s)),r);
     x+='<item>';
-    x+='<title><![CDATA['+r._dong+' 카드단말기 설치 안내 — '+r.n+']]></title>';
+    x+='<title><![CDATA['+r._dong+(o.d?' 매장 원상복구 철거':' 카드단말기 설치 안내')+' — '+r.n+']]></title>';
     x+='<link>'+u+'</link><guid isPermaLink="true">'+u+'</guid>';
     x+='<pubDate>'+rfc822(o.m)+'</pubDate>';
     x+='<description><![CDATA['+desc+']]></description>';
@@ -1119,18 +1448,22 @@ function rssFeed(){
 }
 function atomFeed(){
   const now=new Date();
-  const list=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,50);
+  const byDate=function(a,b){return b.m-a.m;};
+  const listR=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s)),d:false};}).sort(byDate).slice(0,25);
+  const listD=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash("d:"+r.s)),d:true};}).sort(byDate).slice(0,25);
+  const list=listR.concat(listD).sort(byDate);
   let x='<?xml version="1.0" encoding="UTF-8"?>';
   x+='<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ko">';
   x+='<title>'+esc(BRAND)+' — 카드단말기 동네별 안내</title>';
-  x+='<subtitle>전국 시·군·구·읍·면·동 카드단말기 설치 안내</subtitle>';
+  x+='<subtitle>전국 시·군·구·읍·면·동 카드단말기 설치 및 매장 원상복구 철거 안내</subtitle>';
   x+='<link href="'+SITE+'/"/>';
   x+='<link href="'+SITE+'/atom.xml" rel="self"/>';
   x+='<id>'+SITE+'/</id>';
   x+='<updated>'+now.toISOString()+'</updated>';
-  list.forEach(function(o){ const r=o.r, u=SITE+"/r/"+r.s, desc=fill(pick(DESC,hash(r.s)),r);
+  list.forEach(function(o){ const r=o.r, u=SITE+(o.d?"/d/":"/r/")+r.s,
+      desc=o.d?fill(pick(DESC_D,hash("d:"+r.s)),r):fill(pick(DESC,hash(r.s)),r);
     x+='<entry>';
-    x+='<title>'+esc(r._dong+' 카드단말기 설치 안내 — '+r.n)+'</title>';
+    x+='<title>'+esc(r._dong+(o.d?' 매장 원상복구 철거':' 카드단말기 설치 안내')+' — '+r.n)+'</title>';
     x+='<link href="'+u+'"/><id>'+u+'</id>';
     x+='<updated>'+o.m.toISOString()+'</updated>';
     x+='<summary>'+esc(desc)+'</summary>';
@@ -1142,20 +1475,24 @@ function listPage(){
   const latest=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash(r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,120);
   const latestLinks=latest.map(function(o){return "<a href=\"/r/"+o.r.s+"\">"+esc(o.r._dong)+" <small style='color:var(--muted)'>"+esc(o.r._gungu||o.r._sido)+"</small></a>";}).join("");
   const sidoLinks=SIDOS.map(function(s){return "<a href=\"/sido/"+(SIDO_SLUGS[s]||"")+"\">"+esc(s)+"<span class=ar>›</span></a>";}).join("");
+  const latestD=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash("d:"+r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,120);
+  const latestDLinks=latestD.map(function(o){return "<a href=\"/d/"+o.r.s+"\">"+esc(o.r._dong)+" <small style='color:var(--muted)'>"+esc(o.r._gungu||o.r._sido)+"</small></a>";}).join("");
   const body=
    "<div class='bgart'>"+bgArt()+"</div>"+
    "<div class='col rpage'>"+
    "<nav class='crumb2'><a href=\"/\">🏠 홈</a><span class=sep>›</span><span class=cur>📜 전체 목록</span></nav>"+
    "<article>"+
      "<div class='r-eyebrow'>📜 전체 안내 목록</div>"+
-     "<h1>카드단말기 동네별 안내 — 전체 목록</h1>"+
-     "<p class='listing-intro'>최근 업데이트된 동네 안내와 시·도 전체를 한곳에 모았습니다. 우리 동네를 눌러 들어가세요.</p>"+
+     "<h1>동네별 안내 — 전체 목록</h1>"+
+     "<p class='listing-intro'>카드단말기 설치와 매장 원상복구 철거, 최근 업데이트된 동네 안내를 한곳에 모았습니다. 우리 동네를 눌러 들어가세요.</p>"+
      "<h2><span class='h2ic c-juchil'>🔔</span>최근 업데이트</h2>"+
      "<div class='lgrid'>"+latestLinks+"</div>"+
+     "<h2><span class='h2ic c-cheong'>🧱</span>매장 원상복구 철거 — 최근 업데이트</h2>"+
+     "<div class='lgrid'>"+latestDLinks+"</div>"+
      "<h2><span class='h2ic c-gunchung'>🗺️</span>시 · 도 전체</h2>"+
      "<div class='lgrid'>"+sidoLinks+"</div>"+
    "</article></div>";
-  return shell({title:"전체 안내 목록 — "+BRAND, desc:"전국 시·군·구·읍·면·동 카드단말기 설치 안내 전체 목록과 최근 업데이트.", url:SITE+"/list", image:photoFor(hash("list")),
+  return shell({title:"전체 안내 목록 — "+BRAND, desc:"전국 시·군·구·읍·면·동 카드단말기 설치 및 매장 원상복구 철거 안내 전체 목록과 최근 업데이트.", url:SITE+"/list", image:photoFor(hash("list")),
     jsonld:{"@context":"https://schema.org","@type":"CollectionPage","name":"전체 안내 목록","url":SITE+"/list"}}, body);
 }
 const AI_BOTS=["GPTBot","OAI-SearchBot","ChatGPT-User","PerplexityBot","Perplexity-User","Google-Extended","ClaudeBot","anthropic-ai","Claude-Web","Applebot-Extended","CCBot","Amazonbot","Bytespider","Bingbot","YandexBot"];
@@ -1173,6 +1510,16 @@ const LLMS_TXT="# "+BRAND+" (danmalgi.com)\n\n"
 +"- 단말기 종류: 유선 단말기, 무선(휴대용) 단말기, 포스(POS), 간편결제(QR·앱)\n"
 +"- 지역: 전국 17개 시·도, 시·군·구, 읍·면·동(약 6,597개 동네)\n"
 +"- 제공: 가맹 신청·서류 안내, 설치, 사후 지원\n\n"
++"## 매장 원상복구 철거 안내\n"
++"- 폐업·이전 시 임대차 원상회복을 위한 인테리어 철거 및 폐기물 반출\n"
++"- 범위 산정(계약서·인수 당시 상태 기준), 현장 확인, 철거·반출, 임대인 확인까지 진행\n"
++"- 지역별 안내: "+SITE+"/d/{지역슬러그} (전국 약 6,597개 동네)\n\n"
++"## 자주 묻는 질문\n"
++"- Q. 카드단말기는 유선과 무선 중 무엇을 골라야 하나요? A. 손님이 계산대로 모이는 매장은 유선이, 테이블 결제나 배달·이동이 잦은 매장은 무선이 적합합니다.\n"
++"- Q. 설치까지 얼마나 걸리나요? A. 상담과 가맹·서류 정리 후 방문 설치·개통까지 보통 며칠 안에 마무리됩니다.\n"
++"- Q. 매장 원상복구는 어디까지 해야 하나요? A. 계약서 내용과 인수 당시 상태가 기준입니다. 임차인이 설치한 간판·파티션·붙박이 시설은 대체로 철거 대상이고, 건물에 속한 골조나 기본 설비는 그대로 두는 것이 일반적입니다.\n"
++"- Q. 원상복구 비용은 어떻게 정해지나요? A. 철거 범위와 폐기물 발생량, 반출 동선이 주된 변수입니다. 층수와 엘리베이터 유무, 차량 진입 가능 여부에 따라서도 달라집니다.\n\n"
++"## 서비스 제공 주체\n- 상호: "+BRAND+"\n- 서비스: 카드단말기·포스 설치, 매장 원상복구 철거\n- 지역: 대한민국 전역(17개 시·도)\n\n"
 +"## 연락\n- 전화 및 문자: "+PHONE+"\n";
 
 // ---------- IndexNow (빙/얀덱스 등 즉시 색인 알림) ----------
@@ -1189,6 +1536,7 @@ function todaysUpdatedUrls(){
   SIDOS.forEach(function(s){ if(isoDate(modifiedDate(hash("sido:"+s)))===td){ const sl=SIDO_SLUGS[s]; if(sl) urls.push(SITE+"/sido/"+sl);} });
   for(const k in GUNGU_SLUGS){ if(isoDate(modifiedDate(hash("gungu:"+k)))===td) urls.push(SITE+"/sigungu/"+GUNGU_SLUGS[k]); }
   for(const r of REGIONS){ if(isoDate(modifiedDate(hash(r.s)))===td) urls.push(SITE+"/r/"+r.s); }
+  for(const r of REGIONS){ if(isoDate(modifiedDate(hash("d:"+r.s)))===td) urls.push(SITE+"/d/"+r.s); }
   return urls;
 }
 // IndexNow 는 참여 엔드포인트 아무 곳에나 넣으면 나머지 엔진으로 전파된다.
@@ -1247,6 +1595,7 @@ function tgDescribe(path){
   const p0=seg[0];
   if(p0==='list'||p0==='sitemap.html') return '전체 목록';
   if(p0==='find') return '지역 검색';
+  if(p0==='d'&&seg[1]){ const rd=BY_SLUG.get(decodeURIComponent(seg[1])); return rd?(rd.n+" 매장 원상복구 철거"):'원상복구 페이지'; }
   if(p0==='r'&&seg[1]){ const r=BY_SLUG.get(decodeURIComponent(seg[1])); return r?(r.n+' 카드단말기'):'지역 페이지'; }
   if(p0==='sido'&&seg[1]){ const s=SLUG2SIDO.get(seg[1]); return s?(s+' 카드단말기'):'시도 페이지'; }
   if(p0==='sigungu'&&seg[1]){ const g=SLUG2GUNGU.get(seg[1]); return g?(g.sido+' '+g.gungu+' 카드단말기'):'시군구 페이지'; }
@@ -1304,8 +1653,7 @@ export default {
   async fetch(request, env, ctx){
     const url=new URL(request.url);
     let path=decodeURIComponent(url.pathname);
-    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[b.type]){const tgp=tgNotify(env, b.type,(b.page||"/").slice(0,300),b.ref||"",ua);if(ctx&&ctx.waitUntil)ctx.waitUntil(tgp);else await tgp;}const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&!(b.type==="view"&&BOT_UA_RE.test(request.headers.get("User-Agent")||""))&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare('INSERT INTO events (site,type,page,ref,ip,ts,ua,device,source,keyword) VALUES (?,?,?,?,?,?,?,?,?,?)')
-            .bind('danmalgi', b.type, (b.page||'').slice(0,300), (b.ref||'').slice(0,120), ip, ts, ...tkMeta(request.headers.get('User-Agent')||'', b.ref||'', 'danmalgi.com')).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
+    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[b.type]){const tgp=tgNotify(env, b.type,(b.page||"/").slice(0,300),b.ref||"",ua);if(ctx&&ctx.waitUntil)ctx.waitUntil(tgp);else await tgp;}const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&!(b.type==="view"&&BOT_UA_RE.test(request.headers.get("User-Agent")||""))&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare("INSERT INTO events (site,type,page,ref,ip,ts) VALUES (?,?,?,?,?,?)").bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
     if(path==="/api/track"&&request.method==="OPTIONS")return new Response(null,{headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
@@ -1343,6 +1691,11 @@ export default {
     if(path.startsWith("/sigungu/")){
       const info=SLUG2GUNGU.get(path.slice(9));
       if(info) return resp(sigunguPage(info),"text/html; charset=UTF-8");
+    }
+    if(path.startsWith("/d/")){
+      const slug=decodeURIComponent(path.slice(3));
+      const R=BY_SLUG.get(slug);
+      if(R) return resp(demolitionPage(R),"text/html; charset=UTF-8");
     }
     if(path.startsWith("/r/")){
       const slug=path.slice(3);
