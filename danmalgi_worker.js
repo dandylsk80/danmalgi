@@ -850,7 +850,7 @@ a{color:inherit;text-decoration:none}
 .col{max-width:720px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
 /* header */
 .top{position:sticky;top:0;z-index:30;background:rgba(248,244,236,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.top .row{display:flex;align-items:center;justify-content:space-between;height:62px}
+.top .row{display:flex;align-items:center;justify-content:space-between;gap:8px;height:62px}
 .brand{font-weight:800;font-size:19px;letter-spacing:-.02em}
 .brand b{color:var(--clay)}
 .call{font-size:14px;font-weight:700;border:1.5px solid var(--ink);padding:8px 15px;border-radius:2px}
@@ -1088,6 +1088,14 @@ article p.lead{font-size:19px;color:var(--ink);font-weight:500}
 .hbtn.sms{background:#FFFDF8;color:var(--ink)}
 @media(max-width:480px){.hbtn{padding:8px 11px;font-size:12.5px}.logo-word{font-size:17px}}
 
+/* 헤더 메뉴 */
+.hnav{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.hnav a{font-family:'Gowun Batang',serif;font-size:14px;font-weight:700;color:var(--ink);padding:8px 10px;border-radius:8px;white-space:nowrap;transition:background .15s,color .15s}
+.hnav a:hover{background:rgba(182,50,42,.08);color:var(--juchil)}
+@media(max-width:620px){.hnav a{font-size:13px;padding:7px 7px}}
+@media(max-width:480px){.hnav a{font-size:12.5px;padding:6px 5px}}
+@media(max-width:360px){.hnav a{font-size:12px;padding:6px 4px}.logo-word{font-size:16px}}
+
 /* 우측 플로팅 (조선 도장풍) */
 .floatbtns{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;flex-direction:column;gap:10px}
 .fab{display:inline-flex;align-items:center;gap:9px;padding:13px 17px;border-radius:13px;font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:14.5px;color:#F8F4EC;box-shadow:0 9px 24px -8px rgba(28,24,20,.55);border:2px solid rgba(248,244,236,.5);position:relative;animation:floaty 4s ease-in-out infinite}
@@ -1134,6 +1142,10 @@ function shell(o, body){
   return "<!DOCTYPE html><html lang=ko><head>"+head(o)+"</head><body>"+
     "<header class=top><div class=wrap><div class=row>"+
       "<a class=brand href=\"/\">"+logo+"</a>"+
+      "<nav class=hnav>"+
+        "<a href=\"/list\">카드단말기</a>"+
+        "<a href=\"/d\">원상복구</a>"+
+      "</nav>"+
       "<div class=hcall>"+
         "<a class='hbtn call' href=\"tel:"+PHONE_TEL+"\">📞 전화</a>"+
         "<a class='hbtn sms' href=\"sms:"+PHONE_TEL+"\">💬 문자</a>"+
@@ -1345,6 +1357,22 @@ function regionPage(R){
 }
 
 // ---------- 시도 / 시군구 계층 페이지 (하위페이지처럼 4000자+ 본문 포함) ----------
+/* 해당 시·도에 속한 읍·면·동 전체 (시군구 직할 포함) */
+function regionsOfSido(sido){
+  let out=(GROUPS.get(sido+"|")||[]).slice();
+  for(const g of (SIDO_GUNGUS.get(sido)||[])) out=out.concat(GROUPS.get(sido+"|"+g)||[]);
+  return out;
+}
+/* 지역 목록을 철거 안내 갱신일 최신순으로 잘라 링크 블록을 만든다 */
+function demolitionLinkBlock(label, list, limit){
+  const top=list.map(function(r){return {r:r,m:modifiedDate(hash("d:"+r.s))};})
+    .sort(function(a,b){return b.m-a.m;}).slice(0,limit);
+  if(!top.length) return "";
+  const links=top.map(function(o){return "<a href=\"/d/"+o.r.s+"\">"+esc(o.r._dong)+" 원상복구</a>";}).join("");
+  return "<div class=near><h3>🧱 "+esc(label)+" 매장 원상복구 철거 안내 →</h3>"+
+    "<p style=\"font-size:14.5px;color:var(--muted);margin:-6px 0 14px\">폐업이나 이전으로 매장을 비워야 한다면, "+esc(label)+" 동네별 원상복구 철거 안내를 확인하세요.</p>"+
+    "<div class=g>"+links+"<a class=more href=\"/d\">전국 철거 목록 전체 보기 →</a></div></div>";
+}
 function sidoArtR(sido){ const key="sido:"+sido; return {n:sido, s:key, _sido:sido, _gungu:"", _dong:sido, _syn:hash(key), _dedup:true}; }
 function gunguArtR(sido,gungu){ const key="gungu:"+sido+"|"+gungu; return {n:sido+" "+gungu, s:key, _sido:sido, _gungu:gungu, _dong:gungu, _syn:hash(key), _dedup:true}; }
 function listingPage(o){
@@ -1362,6 +1390,7 @@ function listingPage(o){
      "<p class='listing-intro'>"+esc(o.intro)+"</p>"+
      "<div class='lgrid'>"+items+"</div>"+
      "<div class=cta><div class=t>"+esc(o.ctaT)+"</div><p>"+esc(o.ctaB)+"</p><a href=\"tel:"+PHONE_TEL+"\">📞 전화 상담 "+PHONE+"</a></div>"+
+     (o.after||"")+
    "</article></div>";
   return shell({title:o.title,desc:o.desc,url:o.url,article:true,jsonld:o.jsonld,image:o.image}, body);
 }
@@ -1385,6 +1414,7 @@ function sidoPage(sido){
     gridTitle: sido+"의 "+(gungus.length?"시·군·구 바로가기":"읍·면·동 바로가기"),
     intro: sido+"의 "+(gungus.length?"시·군·구":"읍·면·동")+"를 눌러 우리 동네 카드단말기 안내로 들어가세요.",
     items: items,
+    after: demolitionLinkBlock(sido, regionsOfSido(sido), 24),
     ctaT: sido+", 어디서든 설치",
     ctaB: "매장 위치와 업종만 알려 주세요. "+sido+" 어느 동네든 맞는 단말기를 함께 찾아 드립니다.",
     jsonld:[
@@ -1413,6 +1443,7 @@ function sigunguPage(info){
     gridTitle: gungu+"의 읍·면·동 바로가기",
     intro: gungu+"의 읍·면·동을 눌러 우리 동네 카드단말기 안내로 들어가세요.",
     items: items,
+    after: demolitionLinkBlock(gungu, GROUPS.get(key)||[], 30),
     ctaT: gungu+"에서 시작하세요",
     ctaB: "매장 위치와 업종만 알려 주세요. "+gungu+"에 맞는 단말기를 함께 짚어 드립니다.",
     jsonld:[
@@ -1452,6 +1483,7 @@ function sitemap(){
   let u="<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
   u+="<url><loc>"+SITE+"/</loc><lastmod>"+today+"</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>";
   u+="<url><loc>"+SITE+"/list</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>";
+  u+="<url><loc>"+SITE+"/d</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>";
   SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl){ const m=isoDate(modifiedDate(hash("sido:"+s))); u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>"; } });
   for(const k in GUNGU_SLUGS){ const m=isoDate(modifiedDate(hash("gungu:"+k))); u+="<url><loc>"+SITE+"/sigungu/"+GUNGU_SLUGS[k]+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; }
   for(const r of REGIONS){
@@ -1538,6 +1570,30 @@ function listPage(){
   return shell({title:"전체 안내 목록 — "+BRAND, desc:"전국 시·군·구·읍·면·동 카드단말기 설치 및 매장 원상복구 철거 안내 전체 목록과 최근 업데이트.", url:SITE+"/list", image:photoFor(hash("list")),
     jsonld:{"@context":"https://schema.org","@type":"CollectionPage","name":"전체 안내 목록","url":SITE+"/list"}}, body);
 }
+function demolitionListPage(){
+  const latestD=REGIONS.map(function(r){return {r:r,m:modifiedDate(hash("d:"+r.s))};}).sort(function(a,b){return b.m-a.m;}).slice(0,120);
+  const latestDLinks=latestD.map(function(o){return "<a href=\"/d/"+o.r.s+"\">"+esc(o.r._dong)+" <small style='color:var(--muted)'>"+esc(o.r._gungu||o.r._sido)+"</small></a>";}).join("");
+  const sidoLinks=SIDOS.map(function(s){return "<a href=\"/sido/"+(SIDO_SLUGS[s]||"")+"\">"+esc(s)+"<span class=ar>›</span></a>";}).join("");
+  const url=SITE+"/d";
+  const desc="전국 시·군·구·읍·면·동 매장 원상복구 철거 안내. 폐업·이전 시 인테리어 철거와 폐기물 반출, 철거 범위 산정과 임대인 확인까지 동네별로 정리했습니다. 상담 "+PHONE+".";
+  const body=
+   "<div class='bgart'>"+bgArt()+"</div>"+
+   "<div class='col rpage'>"+
+   "<nav class='crumb2'><a href=\"/\">🏠 홈</a><span class=sep>›</span><span class=cur>🧱 매장 원상복구 철거</span></nav>"+
+   "<article>"+
+     "<div class='r-eyebrow'>🧱 매장 원상복구 철거</div>"+
+     "<h1>매장 원상복구 철거 — 전국 동네별 안내</h1>"+
+     "<p class='listing-intro'>폐업이나 이전으로 매장을 비워야 할 때 필요한 인테리어 철거와 폐기물 반출, 철거 범위 산정부터 임대인 확인까지의 절차를 동네별로 정리했습니다. 우리 동네를 눌러 들어가세요.</p>"+
+     "<h2><span class='h2ic c-cheong'>🔔</span>최근 업데이트된 동네</h2>"+
+     "<div class='lgrid'>"+latestDLinks+"</div>"+
+     "<h2><span class='h2ic c-gunchung'>🗺️</span>시 · 도 전체</h2>"+
+     "<p class='listing-intro'>시·도 페이지로 들어가 시·군·구를 고르면, 페이지 아래쪽 철거 안내 블록에서 그 지역 동네별 원상복구 안내로 이어집니다.</p>"+
+     "<div class='lgrid'>"+sidoLinks+"</div>"+
+     "<div class=near><h3>🔗 함께 보기</h3><div class=g><a href=\"/list\">카드단말기 설치 전체 목록 →</a></div></div>"+
+   "</article></div>";
+  return shell({title:"매장 원상복구 철거 — 전국 동네별 안내 | "+BRAND, desc:desc, url:url, image:photoForD(hash("dlist")),
+    jsonld:{"@context":"https://schema.org","@type":"CollectionPage","name":"매장 원상복구 철거 — 전국 동네별 안내","headline":"매장 원상복구 철거 — 전국 동네별 안내","url":url,"description":desc,"inLanguage":"ko-KR","isPartOf":{"@type":"WebSite","name":BRAND,"url":SITE+"/"},"about":"매장 원상복구 철거"}}, body);
+}
 const AI_BOTS=["GPTBot","OAI-SearchBot","ChatGPT-User","PerplexityBot","Perplexity-User","Google-Extended","ClaudeBot","anthropic-ai","Claude-Web","Applebot-Extended","CCBot","Amazonbot","Bytespider","Bingbot","YandexBot"];
 const ROBOTS=(DAUM_VERIFY?"#DaumWebMasterTool:"+DAUM_VERIFY+"\n":"")+(NAVER_VERIFY?"#naver-site-verification:"+NAVER_VERIFY+"\n":"")
   +"User-agent: *\nAllow: /\n\n"
@@ -1574,7 +1630,7 @@ const LLMS_TXT="# "+BRAND+" (danmalgi.com)\n\n"
 
 // ---------- IndexNow (빙/얀덱스 등 즉시 색인 알림) ----------
 function allUrls(){
-  const urls=[SITE+"/", SITE+"/list"];
+  const urls=[SITE+"/", SITE+"/list", SITE+"/d"];
   SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl) urls.push(SITE+"/sido/"+sl); });
   for(const k in GUNGU_SLUGS) urls.push(SITE+"/sigungu/"+GUNGU_SLUGS[k]);
   for(const r of REGIONS) urls.push(SITE+"/r/"+r.s);
@@ -1582,7 +1638,7 @@ function allUrls(){
 }
 function todaysUpdatedUrls(){
   const td=isoDate(new Date());
-  const urls=[SITE+"/", SITE+"/list"];
+  const urls=[SITE+"/", SITE+"/list", SITE+"/d"];
   SIDOS.forEach(function(s){ if(isoDate(modifiedDate(hash("sido:"+s)))===td){ const sl=SIDO_SLUGS[s]; if(sl) urls.push(SITE+"/sido/"+sl);} });
   for(const k in GUNGU_SLUGS){ if(isoDate(modifiedDate(hash("gungu:"+k)))===td) urls.push(SITE+"/sigungu/"+GUNGU_SLUGS[k]); }
   for(const r of REGIONS){ if(isoDate(modifiedDate(hash(r.s)))===td) urls.push(SITE+"/r/"+r.s); }
@@ -1723,6 +1779,7 @@ export default {
     if(path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed") return resp(rssFeed(),"application/rss+xml; charset=UTF-8");
     if(path==="/atom.xml"||path==="/atom") return resp(atomFeed(),"application/atom+xml; charset=UTF-8");
     if(path==="/list"||path==="/sitemap.html") return resp(listPage(),"text/html; charset=UTF-8");
+    if(path==="/d"||path==="/d/") return resp(demolitionListPage(),"text/html; charset=UTF-8");
     if(path==="/og.svg") return resp(OG_SVG,"image/svg+xml");
     if(path==="/favicon.svg") return resp(FAVICON_SVG,"image/svg+xml");
     if(path==="/favicon.ico") return new Response(b64bytes(FAVICON_ICO_B64),{headers:{"content-type":"image/x-icon","cache-control":"public, max-age=86400"}});
