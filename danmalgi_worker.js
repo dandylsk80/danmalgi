@@ -1542,9 +1542,16 @@ const AI_BOTS=["GPTBot","OAI-SearchBot","ChatGPT-User","PerplexityBot","Perplexi
 const ROBOTS=(DAUM_VERIFY?"#DaumWebMasterTool:"+DAUM_VERIFY+"\n":"")+(NAVER_VERIFY?"#naver-site-verification:"+NAVER_VERIFY+"\n":"")
   +"User-agent: *\nAllow: /\n\n"
   +AI_BOTS.map(function(b){return "User-agent: "+b+"\nAllow: /\n";}).join("\n")
-  +"\nSitemap: "+SITE+"/sitemap.xml\n";
+  +"\n# llms.txt: "+SITE+"/llms.txt\nLlms-txt: "+SITE+"/llms.txt\nSitemap: "+SITE+"/sitemap.xml\n";
 const LLMS_TXT="# "+BRAND+" (danmalgi.com)\n\n"
 +"> 전국 시·군·구·읍·면·동 단위 카드단말기 설치 안내 서비스. 유선·무선·포스(POS)·간편결제 단말기를 가격이 아닌 동네 상황에 맞춰 안내합니다. 무료 견적, 빠른 설치. 문의 "+PHONE+".\n\n"
++"## 주요 서비스\n"
++"- 카드단말기 설치 — 유선 단말기, 무선(휴대용) 단말기, 포스(POS), 간편결제(QR·앱)\n"
++"- 동네 상황 맞춤 안내 — 매장 위치와 손님 동선, 결제 방식에 맞춰 장비를 골라 제안\n"
++"- 카드 가맹 신청 대행 — 사업자등록증 등 서류 안내와 가맹 등록 절차 진행\n"
++"- 방문 설치와 사용 교육 — 설치 후 현장에서 사용법을 안내\n"
++"- 매장 원상복구 철거 — 폐업·이전 시 인테리어 철거와 폐기물 반출, 임대인 확인까지 진행\n"
++"- 사후 지원 — 고장·오류 대응과 장비 교체\n\n"
 +"## 핵심 페이지\n"
 +"- [전체 목록]("+SITE+"/list): 전국 동네별 안내 색인\n"
 +"- [사이트맵]("+SITE+"/sitemap.xml)\n"
