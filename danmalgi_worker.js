@@ -1634,6 +1634,7 @@ function allUrls(){
   SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl) urls.push(SITE+"/sido/"+sl); });
   for(const k in GUNGU_SLUGS) urls.push(SITE+"/sigungu/"+GUNGU_SLUGS[k]);
   for(const r of REGIONS) urls.push(SITE+"/r/"+r.s);
+  for(const r of REGIONS) urls.push(SITE+"/d/"+r.s);
   return urls;
 }
 function todaysUpdatedUrls(){
