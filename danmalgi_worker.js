@@ -1344,13 +1344,19 @@ function regionPage(R){
     "headline":R._dong+" 카드단말기 설치 안내","inLanguage":"ko-KR",
     "datePublished":isoDate(pub),"dateModified":isoDate(mod),
     "author":{"@type":"Organization","name":BRAND},"publisher":{"@type":"Organization","name":BRAND},
-    "mainEntityOfPage":url,"image":photoFor(seed),"about":R.n+" 카드단말기 설치"},
+    "mainEntityOfPage":url,"image":photoFor(seed),"about":R.n+" 카드단말기 설치",
+    "speakable":{"@type":"SpeakableSpecification","cssSelector":[".lead",".keybox"]}},
    {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
      {"@type":"ListItem","position":1,"name":"홈","item":SITE+"/"},
      {"@type":"ListItem","position":2,"name":R._sido},
      {"@type":"ListItem","position":3,"name":R._gungu||R._sido},
      {"@type":"ListItem","position":4,"name":R._dong,"item":url}]},
    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":faqJsonLd(R)},
+   {"@context":"https://schema.org","@type":"HowTo","name":R._dong+" 카드단말기 설치 절차","step":[
+     {"@type":"HowToStep","position":1,"name":"상담","text":"매장 위치와 업종, 하루 결제 건수를 알려주시면 맞는 단말기를 골라 안내합니다."},
+     {"@type":"HowToStep","position":2,"name":"가맹 신청","text":"사업자등록증 등 필요한 서류를 안내하고 카드 가맹 등록을 대행합니다."},
+     {"@type":"HowToStep","position":3,"name":"방문 설치","text":"기사님이 매장으로 찾아가 단말기를 설치하고 개통합니다."},
+     {"@type":"HowToStep","position":4,"name":"사용 교육·사후 지원","text":"현장에서 사용법을 알려드리고, 이후 고장·오류도 대응합니다."}]},
    {"@context":"https://schema.org","@type":"Service","serviceType":"카드단말기 설치","name":R._dong+" 카드단말기 설치","provider":{"@type":"Organization","name":BRAND,"telephone":PHONE},"areaServed":{"@type":"Place","name":R.n},"description":desc}
   ];
   return shell({title,desc,url,article:true,jsonld,image:photoFor(seed)}, body);
