@@ -1237,7 +1237,7 @@ function shell(o, body){
       "<a class='fab fab-call' href=\"tel:"+PHONE_TEL+"\"><span class=fab-ic>📞</span><span class=fab-t>전화 상담</span></a>"+
       "<a class='fab fab-sms' href=\"sms:"+PHONE_TEL+"\"><span class=fab-ic>💬</span><span class=fab-t>문자 상담</span></a>"+
     "</div>"+
-    "<script>(function(){var U='/api/track',S={};function t(ty){try{var d=JSON.stringify({type:ty,page:location.pathname,ref:document.referrer}),ok=false;if(navigator.sendBeacon){try{ok=navigator.sendBeacon(U,new Blob([d],{type:'application/json'}));}catch(e){}}if(!ok){try{fetch(U,{method:'POST',headers:{'Content-Type':'application/json'},body:d,keepalive:true}).catch(function(){});}catch(e){}}}catch(e){}}function c(ty){if(S[ty])return;S[ty]=1;setTimeout(function(){S[ty]=0;},1500);t(ty);}function h(e,early){var a=e.target&&e.target.closest&&e.target.closest('a,button');if(!a)return;var v=(a.getAttribute&&a.getAttribute('href'))||'';if(v.indexOf('tel:')===0)c('tel');else if(v.indexOf('sms:')===0)c('sms');}document.addEventListener('pointerdown',function(e){h(e,1);},true);document.addEventListener('click',function(e){h(e,0);},true);if(location.pathname.indexOf('/api/')!==0)t('view');})();<\/script>"+
+    "<script>(function(){var U='/api/track',S={},W=90000;function K(ty){return 'tk_'+ty+'_'+location.pathname;}function seen(ty){var k=K(ty),n=Date.now();if(S[k]&&n-S[k]<W)return 1;try{var v=sessionStorage.getItem(k);if(v&&n-(+v)<W)return 1;}catch(e){}return 0;}function mark(ty){var k=K(ty),n=Date.now();S[k]=n;try{sessionStorage.setItem(k,''+n);}catch(e){}}function t(ty,b){try{var d=JSON.stringify({type:ty,page:location.pathname,ref:document.referrer,b:b||''}),ok=false;if(navigator.sendBeacon){try{ok=navigator.sendBeacon(U,new Blob([d],{type:'application/json'}));}catch(e){}}if(!ok){try{fetch(U,{method:'POST',headers:{'Content-Type':'application/json'},body:d,keepalive:true}).catch(function(){});}catch(e){}}}catch(e){}}function c(ty,b){if(seen(ty))return;mark(ty);t(ty,b);}function L(a){try{var s=(a.getAttribute&&a.getAttribute('aria-label'))||a.textContent||'';return s.replace(/\s+/g,' ').trim().slice(0,40);}catch(e){return '';}}function h(e,early){var a=e.target&&e.target.closest&&e.target.closest('a,button,[data-tk]');if(!a)return;var k=(a.getAttribute&&a.getAttribute('data-tk'))||'',v=(a.getAttribute&&a.getAttribute('href'))||'';if(!k&&!v&&a.closest){var p=a.closest('a[href]');if(p){a=p;v=p.getAttribute('href')||'';}}if(k==='tel'||v.indexOf('tel:')===0)c('tel',L(a));else if(k==='sms'||v.indexOf('sms:')===0)c('sms',L(a));else if(!early&&k==='contact')c('contact',L(a));}document.addEventListener('pointerdown',function(e){h(e,1);},true);document.addEventListener('click',function(e){h(e,0);},true);if(location.pathname.indexOf('/api/')!==0)t('view');})();<\/script>"+
     "</body></html>";
 }
 
@@ -1776,7 +1776,7 @@ function resp(html,type,extra){
 
 
 /* ─── 텔레그램 전환 알림 (전화·문자 버튼 클릭 시 즉시 알림) ─── */
-const TG_LABEL = { tel: '전화 버튼 클릭', sms: '문자 버튼 클릭', contact: '상담 버튼 클릭' };
+const TG_LABEL = { tel: '전화 버튼 클릭', sms: '문자 버튼 클릭', contact: '상담 신청 접수' };
 const TG_SITE   = '단말기닷컴';
 const TG_DOMAIN = 'danmalgi.com';
 const TG_ORIGIN = 'https://danmalgi.com';
@@ -1816,7 +1816,24 @@ function tgTime(){
   return d.getUTCFullYear()+'-'+z(d.getUTCMonth()+1)+'-'+z(d.getUTCDate())+' '+z(d.getUTCHours())+':'+z(d.getUTCMinutes());
 }
 const TG_BOT_RE = /bot|crawl|spider|slurp|facebookexternalhit|curl|wget|python|axios|headless|lighthouse|pagespeed|semrush|ahrefs|bytespider|applebot|monitor|uptime|scan/i;
-async function tgNotify(env, type,page,ref,ua){
+
+/* ── 서버 측 연타 방어 ──────────────────────────────────────────
+   클라이언트 디바운스는 새 탭·시크릿창·브라우저 재시작으로 초기화된다.
+   같은 site+type+page+ip 가 TK_DUP_MS 안에 이미 기록돼 있으면 중복으로 보고 버린다.
+   조회가 실패하면 false 를 돌려 추적 자체는 절대 막지 않는다. */
+const TK_DUP_MS = 10 * 60 * 1000;
+async function tkDup(env, site, type, page, ip) {
+  if (!env || !env.DB || !ip || type === 'view') return false;
+  try {
+    const since = new Date(Date.now() - TK_DUP_MS).toISOString();
+    const row = await env.DB.prepare(
+      'SELECT 1 FROM events WHERE site=? AND type=? AND page=? AND ip=? AND ts>? LIMIT 1'
+    ).bind(site, type, page, ip, since).first();
+    return !!row;
+  } catch (e) { return false; }
+}
+
+async function tgNotify(env, type,page,ref,ua,btn){
   const TG_TOKEN = env && env.TG_TOKEN;
   const TG_CHAT = env && env.TG_CHAT;
   if (!TG_TOKEN || !TG_CHAT) return;
@@ -1828,6 +1845,8 @@ async function tgNotify(env, type,page,ref,ua){
   L.push('사이트: '+TG_SITE+' ('+TG_DOMAIN+')');
   L.push('주소: '+TG_ORIGIN+page);
   L.push('페이지: ' + tgDescribe(page));
+  /* 라벨이 '상담' 인데 실제로는 sms:/tel: 링크인 버튼이 있어 눌린 버튼 이름을 그대로 싣는다 */
+  if (btn) L.push('버튼: ' + btn);
   /* ref 에서 뽑은 진짜 검색어 — 없으면 줄 자체를 넣지 않는다 */
   const __kw = tkKeyword(ref);
   if (__kw) L.push('검색어: ' + __kw);
@@ -1858,7 +1877,12 @@ export default {
   async fetch(request, env, ctx){
     const url=new URL(request.url);
     let path=decodeURIComponent(url.pathname);
-    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[b.type]){const tgp=tgNotify(env, b.type,(b.page||"/").slice(0,300),b.ref||"",ua);if(ctx&&ctx.waitUntil)ctx.waitUntil(tgp);else await tgp;}const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&!(b.type==="view"&&BOT_UA_RE.test(request.headers.get("User-Agent")||"")||(b.type==="view"&&skipViewCf(request, request.headers.get("CF-Connecting-IP")||"")))&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare('INSERT INTO events (site,type,page,ref,ip,ts,ua,device,source,keyword) VALUES (?,?,?,?,?,?,?,?,?,?)').bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts,...tkMeta(request.headers.get('User-Agent')||'', b.ref||'', 'danmalgi.com')).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
+    if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json();
+    /* 같은 방문자가 같은 버튼을 반복해 눌러도 1건만 기록·발송한다 */
+    if (await tkDup(env, 'danmalgi', b.type, (b.page || '').slice(0, 300), request.headers.get('CF-Connecting-IP') || '')) {
+      return new Response(JSON.stringify({ ok: true, dup: 1 }), { headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' } });
+    }
+const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[b.type]){const tgp=tgNotify(env, b.type,(b.page||"/").slice(0,300),b.ref||"",ua, String(b.b || "").slice(0, 40));if(ctx&&ctx.waitUntil)ctx.waitUntil(tgp);else await tgp;}const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&!(b.type==="view"&&BOT_UA_RE.test(request.headers.get("User-Agent")||"")||(b.type==="view"&&skipViewCf(request, request.headers.get("CF-Connecting-IP")||"")))&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){await env.DB.prepare('INSERT INTO events (site,type,page,ref,ip,ts,ua,device,source,keyword) VALUES (?,?,?,?,?,?,?,?,?,?)').bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts,...tkMeta(request.headers.get('User-Agent')||'', b.ref||'', 'danmalgi.com')).run();}}catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
     if(path==="/api/track"&&request.method==="OPTIONS")return new Response(null,{headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
