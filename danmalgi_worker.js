@@ -508,7 +508,8 @@ function buildArticle(R){
     sents.splice(hash(R.s+id+"p2")%(sents.length+1),0,rl2);
     return esc(fill(sents.join(" "), R));
   };
-  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+ICON[id]+"</span>"+h(id)+"</h2><p>"+compose(id,2)+"</p>";
+  const geo = (id)=>(hash(R.s+id+"geo")%10 < 7) ? esc(R._dong)+" " : "";
+  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+ICON[id]+"</span>"+geo(id)+h(id)+"</h2><p>"+compose(id,2)+"</p>";
 
   const keybox="<div class='keybox'><div class='keybox-t'>📜 한눈에 보기</div><ul>"+
     "<li>"+esc(fill("{D} 어디서나 유선·무선·포스·간편결제 설치를 안내합니다.",R))+"</li>"+
@@ -769,7 +770,8 @@ function buildArticleD(R){
     const rl=pick(RLINE_D, hash(R.s+"d"+id+"r"));
     return esc(fill(p+" "+rl, R));
   };
-  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+(ICON_D[id]||"🧱")+"</span>"+h(id)+"</h2><p>"+compose(id)+"</p>";
+  const geo = (id)=>(hash(R.s+"d"+id+"geo")%10 < 7) ? esc(R._dong)+" " : "";
+  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+(ICON_D[id]||"🧱")+"</span>"+geo(id)+h(id)+"</h2><p>"+compose(id)+"</p>";
 
   const KB1=["{D} 어디서나 매장 원상복구 철거를 현장 확인 후 진행합니다.","{D} 전역으로 방문해 폐업·이전 매장을 정리합니다.","{D} 매장까지 찾아가 철거 범위부터 함께 짚어 드립니다."];
   const KB2=["계약서와 인수 당시 상태를 기준으로 걷어낼 범위를 함께 정합니다.","무엇을 남기고 무엇을 뜯을지 계약 조건에 맞춰 나눕니다.","입주 당시 자료를 근거로 되돌릴 선을 명확히 잡습니다."];
@@ -1267,6 +1269,37 @@ function bgArt(){return "<svg viewBox='0 0 1440 900' preserveAspectRatio='xMidYM
  "</g>"+
  "</svg>";}
 // ---------- 메인 페이지 ----------
+/* 홈 하단 지역 색인 — 크롤러가 지역 페이지로 들어오는 정적 경로.
+   검색창(SEARCH_JS)은 JS 로만 링크를 만들어 크롤러가 따라오지 못한다.
+   REGIONS 정렬이 매 요청마다 돌면 CPU 를 먹으므로 날짜 단위로 캐시한다. */
+let hriDay = -1, hriHtml = null;
+function homeRegionIndex(){
+  const day = Math.floor(Date.now()/86400000);
+  if(hriDay === day && hriHtml) return hriHtml;
+  const sido = SIDOS.map(function(s){
+    const sl = SIDO_SLUGS[s] || "";
+    return sl ? "<a href=\"/sido/"+sl+"\">"+esc(s)+"</a>" : "";
+  }).join("");
+  const gk = [];
+  for(const k in GUNGU_SLUGS) gk.push([k, (GROUPS.get(k)||[]).length]);
+  gk.sort(function(a,b){ return b[1]-a[1] || a[0].localeCompare(b[0],"ko"); });
+  const gungu = gk.slice(0,60).map(function(p){
+    const t = p[0].split("|");
+    return "<a href=\"/sigungu/"+GUNGU_SLUGS[p[0]]+"\">"+esc(t[1])+" <small>"+esc(t[0])+"</small></a>";
+  }).join("");
+  const recent = REGIONS.slice().sort(function(a,b){
+    return modifiedDate(hash(b.s)) - modifiedDate(hash(a.s)) || a.s.localeCompare(b.s);
+  }).slice(0,60).map(function(r){
+    return "<a href=\"/r/"+r.s+"\">"+esc(r._dong)+" <small>"+esc(r._gungu||r._sido)+"</small></a>";
+  }).join("");
+  hriHtml = "<div class='wrap'>"+
+    "<div class='near'><h3>\ud83d\uddfa\ufe0f \uc2dc \u00b7 \ub3c4\ubcc4 \uc548\ub0b4</h3><div class='g'>"+sido+"</div></div>"+
+    "<div class='near'><h3>\ud83c\udfd9\ufe0f \uc8fc\uc694 \uc2dc \u00b7 \uad70 \u00b7 \uad6c</h3><div class='g'>"+gungu+"</div></div>"+
+    "<div class='near'><h3>\ud83c\udd95 \ucd5c\uadfc \uc5c5\ub370\uc774\ud2b8\ub41c \uc9c0\uc5ed</h3><div class='g'>"+recent+"</div></div>"+
+    "</div>";
+  hriDay = day;
+  return hriHtml;
+}
 function homePage(){
   const pal=["p-juchil","p-gunchung","p-cheong","p-chija","p-meok","p-clay"];
   const patches=SIDOS.map(function(s,i){
@@ -1350,6 +1383,7 @@ function homePage(){
      "<a class='go' href='tel:"+PHONE_TEL+"'>전화 상담 "+PHONE+"</a>"+
    "</div></div>"+
 
+   homeRegionIndex()+
    "</div>"+
    "<script>"+SEARCH_JS+REVEAL_JS+"<\/script>";
 
