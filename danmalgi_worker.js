@@ -2073,6 +2073,18 @@ const INDEXNOW_ENDPOINTS = [
   "https://yandex.com/indexnow",
   "https://search.seznam.cz/indexnow"
 ];
+/* 네이버는 IndexNow 참여 엔드포인트지만 위 폴백 체인에 넣으면 안 된다 — 체인은 한 곳이
+   200 을 주는 순간 멈추므로 yandex 가 먼저 성공하면 네이버로는 영영 안 간다.
+   같은 본문을 체인 밖에서 따로 보내고 status 를 따로 남긴다.
+   루트 URL 하나만 담긴 배치는 422 "Invalid urls" 지만 하위 경로가 섞이면 200 이다(2026-09-21 실측). */
+const INDEXNOW_NAVER_EP = "https://searchadvisor.naver.com/indexnow";
+async function indexnowNaver(body){
+  try{
+    const r=await fetch(INDEXNOW_NAVER_EP,{method:"POST",headers:{"content-type":"application/json; charset=utf-8"},body});
+    return r.status;
+  }catch(e){ return 0; }
+}
+
 async function submitIndexNow(urls){
   if(!INDEXNOW_KEY || !urls || !urls.length) return {sent:0,batches:0,failed:0,diag:[]};
   const host=new URL(SITE).host, keyLocation=SITE+"/"+INDEXNOW_KEY+".txt";
@@ -2089,6 +2101,8 @@ async function submitIndexNow(urls){
         if(r.status>=200&&r.status<300){ ok=true; break; }
       }catch(e){ diag.push({batch:batches,urls:batch.length,endpoint:ep,error:String(e)}); }
     }
+    /* 네이버는 체인 밖에서 따로 보낸다 — 체인은 첫 200 에서 멈춘다 */
+    diag.push({batch:batches,urls:batch.length,endpoint:INDEXNOW_NAVER_EP,status:await indexnowNaver(body)});
     if(ok) sent+=batch.length; else failed+=batch.length;
   }
   return {sent:sent,batches:batches,failed:failed,diag:diag};
