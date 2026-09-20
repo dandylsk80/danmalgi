@@ -1363,6 +1363,8 @@ article p.lead{font-size:19px;color:var(--ink);font-weight:500}
 
 /* 우측 플로팅 (조선 도장풍) */
 .floatbtns{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;flex-direction:column;gap:10px}
+/* 모바일: 하단 우측은 브라우저 툴바·홈 인디케이터·스크롤 동선과 겹쳐 오터치가 난다 → 화면 세로 중앙 우측으로 */
+@media(max-width:768px){.floatbtns{top:50%;bottom:auto;transform:translateY(-50%);gap:12px}}
 .fab{display:inline-flex;align-items:center;gap:9px;padding:13px 17px;border-radius:13px;font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:14.5px;color:#F8F4EC;box-shadow:0 9px 24px -8px rgba(28,24,20,.55);border:2px solid rgba(248,244,236,.5);position:relative;animation:floaty 4s ease-in-out infinite}
 .fab .fab-ic{font-size:18px;line-height:1}
 .fab-call{background:var(--juchil)}
