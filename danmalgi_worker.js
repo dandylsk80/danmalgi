@@ -370,6 +370,55 @@ const HEADK = {
   s17:["카드단말기가 바쁜 시간을 버티려면","카드단말기의 차이는 몰릴 때 드러납니다"],
   s19:["카드단말기, 작은 가게일수록 든든해야 합니다","카드단말기는 규모와 상관없습니다"]
 };
+/* ── 토스단말기 겹침 풀 ─────────────────────────────────────────
+   토스단말기 전용 H2 를 새로 만들면 그 자리만큼 '카드단말기 포함 H2' 비율(79%)이
+   깎인다. 그래서 토스단말기는 반드시 카드단말기와 같은 H2 안에 넣는다.
+   TOSSK = HEADK 자리(동네명이 앞에 붙어 완전조합이 되는 자리)용 — 카드단말기로 시작할 것.
+   TOSSS = 그 밖의 H2 자리용 — 동네명을 붙이지 않아 완전조합 회수가 늘지 않는다. */
+const TOSSK = {
+  s2:["카드단말기와 토스단말기, 동네부터 보는 이유","카드단말기·토스단말기 선택이 상권에서 갈리는 까닭"],
+  s3:["카드단말기와 토스단말기, 유선과 무선 사이","카드단말기·토스단말기는 가게의 움직임을 따릅니다"],
+  s4:["카드단말기와 토스단말기로 간편결제까지","카드단말기·토스단말기를 함께 볼 때"],
+  s5:["카드단말기와 토스단말기 설치는 이렇게 진행됩니다","카드단말기·토스단말기 설치 순서 한눈에"],
+  s6:["카드단말기와 토스단말기 가맹 신청과 서류","카드단말기·토스단말기를 쓰기 전 거치는 절차"],
+  s7:["카드단말기와 토스단말기, 업종이 기준입니다","카드단말기·토스단말기는 장사에 따라 갈립니다"],
+  s8:["카드단말기와 토스단말기, 설치 다음이 더 오래 갑니다","카드단말기·토스단말기는 오래 쓰는 장비입니다"],
+  s10:["카드단말기와 토스단말기가 바뀌어 온 이유","카드단말기·토스단말기와 현금 없는 시대"],
+  s11:["카드단말기와 토스단말기 연결 방식 살펴보기","카드단말기·토스단말기를 인터넷에 잇는 법"],
+  s12:["카드단말기와 토스단말기로 매출을 한눈에","카드단말기·토스단말기가 정산까지 가볍게"],
+  s13:["카드단말기와 토스단말기를 바꿀 때가 됐다는 신호","카드단말기·토스단말기 교체를 생각할 시점"],
+  s17:["카드단말기와 토스단말기가 바쁜 시간을 버티려면","카드단말기·토스단말기의 차이는 몰릴 때 드러납니다"],
+  s19:["카드단말기와 토스단말기, 작은 가게일수록 든든해야 합니다","카드단말기·토스단말기는 규모와 상관없습니다"]
+};
+const TOSSS = {
+  s2:["상권이 가르는 카드단말기와 토스단말기","동네를 먼저 보는 카드단말기·토스단말기 선택"],
+  s3:["유선과 무선 사이의 카드단말기와 토스단말기","가게의 움직임을 따르는 카드단말기·토스단말기"],
+  s4:["간편결제까지 받는 카드단말기와 토스단말기","포스와 함께 보는 카드단말기·토스단말기"],
+  s5:["도입 순서로 보는 카드단말기와 토스단말기","어렵지 않은 카드단말기·토스단말기 설치"],
+  s6:["가맹 서류부터 보는 카드단말기와 토스단말기","겁먹지 않아도 되는 카드단말기·토스단말기 절차"],
+  s7:["업종이 기준이 되는 카드단말기와 토스단말기","장사에 따라 갈리는 카드단말기·토스단말기"],
+  s8:["설치 뒤가 더 긴 카드단말기와 토스단말기","오래 쓰는 장비, 카드단말기·토스단말기 관리"],
+  s10:["현금 없는 시대의 카드단말기와 토스단말기","결제가 바꿔 놓은 카드단말기·토스단말기"],
+  s11:["연결이 좌우하는 카드단말기와 토스단말기","인터넷에 기대는 카드단말기·토스단말기"],
+  s12:["매출을 모아 보는 카드단말기와 토스단말기","정산을 가볍게 하는 카드단말기·토스단말기"],
+  s13:["교체 시점을 알리는 카드단말기와 토스단말기","바꿀 때가 된 카드단말기·토스단말기"],
+  s14:["첫 가게를 여는 분의 카드단말기와 토스단말기","창업 준비에서 만나는 카드단말기·토스단말기"],
+  s15:["영수증까지 맡기는 카드단말기와 토스단말기","끝맺음을 책임지는 카드단말기·토스단말기"],
+  s16:["단골을 만드는 카드단말기와 토스단말기","익숙함을 지키는 카드단말기·토스단말기"],
+  s17:["몰리는 시간을 버티는 카드단말기와 토스단말기","피크타임에 드러나는 카드단말기·토스단말기"],
+  s18:["믿고 맡기는 카드단말기와 토스단말기","안심을 만드는 카드단말기·토스단말기"],
+  s19:["작은 가게의 카드단말기와 토스단말기","규모와 상관없는 카드단말기·토스단말기"]
+};
+/* 본문 토스단말기 문장 — 문장당 토스단말기 1회. 4개 섹션에만 끼워 3~5회를 맞춘다.
+   KSENT({K}) 와 겹치지 않게 따로 둔다 — 완전조합 회수에 영향을 주지 않아야 한다. */
+const TSENT = [
+ "{D}에서도 토스단말기를 찾는 분이 늘었습니다. 기존 장비와 나란히 두고 쓰는 가게도 적지 않습니다.",
+ "토스단말기는 «간편결제에 익숙한 손님이 많은|젊은 손님이 오가는» 가게에서 «반응이 좋습니다|자주 선택됩니다».",
+ "카드단말기 하나로 갈지 토스단말기를 «함께 둘지|보탤지»는 «{D}의 손님 결제 습관을 보고 정하면 됩니다|매장 사정에 맞춰 고르면 됩니다».",
+ "«토스단말기로 바꾸려는 분도|토스단말기를 보태려는 분도» 기존 «가맹 정보를 이어 갈 수 있는지|조건이 어떻게 되는지» 먼저 확인하면 좋습니다.",
+ "«요즘은|최근에는» 토스단말기를 «먼저 묻는 사장님이 많습니다|콕 집어 찾는 분이 많습니다». {D}도 예외는 아닙니다.",
+ "토스단말기와 기존 장비의 «차이는 생각보다 단순합니다|갈림길은 복잡하지 않습니다»."
+];
 const S = {
 s1:[
 "{F}에서 매장을 운영한다면, 카드단말기는 더 이상 선택이 아니라 기본 준비물입니다. 손님들은 현금보다 카드와 간편결제를 먼저 꺼내고, 결제가 매끄럽지 않으면 그 인상은 고스란히 가게에 남습니다. {D} 일대에서 새로 문을 열거나 기존 장비를 바꾸려는 분들이 가장 먼저 확인하는 것이 바로 이 단말기 문제입니다. 작은 차이 같지만 결제 한 번의 경험이 단골을 만들기도, 놓치기도 합니다.",
@@ -671,8 +720,11 @@ const RLINE=[
 // ---------- 지역 글 생성 ----------
 const ICON={s2:"⛰️",s10:"🪙",s3:"🪢",s11:"🧭",s16:"🪷",s4:"🧮",s12:"📜",s5:"⚒️",s17:"⏳",s6:"🪶",s13:"🔔",s7:"🏮",s14:"🌱",s18:"🛡️",s8:"🍵",s15:"🧾",s19:"🕯️"};
 function iconCls(id){return ["c-juchil","c-gunchung","c-cheong","c-chija"][hash(id)%4];}
+/* 본문에 H2 로 나가는 섹션 순서 — buildArticle 의 SEC 호출과 같아야 한다 */
+const SEC_IDS = ["s2","s10","s3","s11","s16","s4","s12","s5","s17","s6","s13","s7","s14","s18","s8","s15","s19"];
 function buildArticle(R){
   const h = (id)=>esc(applySyn(pick(HEADS[id], hash(R.s+id)), R._syn));
+  const TXSEC = new Set(shuffle(SEC_IDS, hash(R.s+"tx")).slice(0,4));
   const compose = (id,kbase)=>{
     const pool=SENT[id];
     const sh=shuffle(pool, hash(R.s+id));
@@ -684,6 +736,8 @@ function buildArticle(R){
     sents.splice(hash(R.s+id+"p2")%(sents.length+1),0,rl2);
     /* 핵심어 문장 1개를 문단 안 임의 위치에 끼운다 */
     if(KSENT[id]) sents.splice(id==="s1"?1:hash(R.s+id+"kp")%(sents.length+1),0,pickVar(pick(KSENT[id],hash(R.s+id+"kw")),hash(R.s+id+"kv")));
+    /* 토스단말기 문장 — 고른 4개 섹션에만 1문장씩 (본문 3~5회) */
+    if(TXSEC.has(id)) sents.splice(hash(R.s+id+"tp")%(sents.length+1),0,pickVar(pick(TSENT,hash(R.s+id+"tw")),hash(R.s+id+"tv")));
     /* 지역명이 한 페이지에 70회 넘게 반복돼 핵심어 비율을 눌렀다 — 3할을 대명사형으로 돌린다 */
     let txt=sents.join(" "), di=0;
     txt=txt.replace(/\{D\}/g,function(){ return (hash(R.s+id+"d"+(di++))%10 < 3) ? "{D2}" : "{D}"; });
@@ -693,9 +747,18 @@ function buildArticle(R){
   /* 완전조합("○○동 카드단말기")을 만드는 섹션을 7개만 고정으로 뽑는다.
      HEADK 제목은 반드시 핵심어로 시작하므로 동네명을 앞에 붙이면 곧 완전조합이 된다. */
   const KSEC = new Set(shuffle(Object.keys(HEADK), hash(R.s+"kh")).slice(0,7));
-  const headFor = (id)=> (KSEC.has(id) && HEADK[id])
-    ? esc(R._dong)+" "+esc(fill(pick(HEADK[id],hash(R.s+id+"hk")),R))
-    : geo(id)+h(id);
+  /* H2 19개 중 10개를 토스단말기 겹침으로 돌린다 (절반). 겹침 제목도 카드단말기를
+     품고 있으므로 카드단말기 H2 비율은 떨어지지 않는다. */
+  const TSEC = new Set(shuffle(SEC_IDS, hash(R.s+"ts")).slice(0,10));
+  const headFor = (id)=>{
+    if(KSEC.has(id) && HEADK[id]){
+      const pool = (TSEC.has(id) && TOSSK[id]) ? TOSSK[id] : HEADK[id];
+      return esc(R._dong)+" "+esc(fill(pick(pool,hash(R.s+id+"hk")),R));
+    }
+    /* 동네명을 붙이지 않는다 — 붙이면 완전조합이 7개 넘게 늘어난다 */
+    if(TSEC.has(id) && TOSSS[id]) return esc(fill(pick(TOSSS[id],hash(R.s+id+"th")),R));
+    return geo(id)+h(id);
+  };
   const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+ICON[id]+"</span>"+headFor(id)+"</h2><p>"+compose(id,2)+"</p>";
 
   const keybox="<div class='keybox'><div class='keybox-t'>📜 한눈에 보기</div><ul>"+
@@ -1613,7 +1676,7 @@ for(var i=0;i<els.length;i++)io.observe(els[i]);})();
 function regionPage(R){
   const seed=hash(R.s);
   const pub=publishedDate(seed), mod=modifiedDate(seed);
-  const title=(R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 설치 | "+R._sido+(R._gungu?" "+R._gungu:"")+" 카드단말기 전문 — "+BRAND;
+  const title=(R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 / 토스단말기 설치 | "+R._sido+(R._gungu?" "+R._gungu:"")+" 카드단말기 전문 — "+BRAND;
   const desc=fill(pick(DESC,seed),R);
   const url=SITE+"/r/"+encodeURIComponent(R.s);
   // 인근(같은 시군구) 링크
@@ -1632,7 +1695,7 @@ function regionPage(R){
      "<span class=cur>📍 "+esc(R._dong)+"</span>"+
    "</nav>"+
    "<article>"+
-     heroBanner(photoFor(seed), "📍 "+esc(R.n), R._dong+" 카드단말기 설치 안내")+
+     heroBanner(photoFor(seed), "📍 "+esc(R.n), R._dong+" 카드단말기 / 토스단말기 설치 안내")+
      "<div class='meta2'><span>📜 발행 <b>"+korDate(pub)+"</b></span><span>🔄 수정 <b>"+korDate(mod)+"</b></span><span>📍 "+esc(R._sido)+"</span></div>"+
      buildArticle(R)+
      "<div class=near><h3>\ud83d\udd17 \ud568\uaed8 \ubcf4\uae30</h3><div class=g><a href=\"/d/"+R.s+"\">"+esc(R._dong)+" \ub9e4\uc7a5 \uc6d0\uc0c1\ubcf5\uad6c \ucca0\uac70 \u2192</a></div></div>"+
@@ -1785,19 +1848,39 @@ function findPage(qstr){
 }
 
 // ---------- sitemap / robots / og ----------
-function sitemap(){
+/* ── 사이트맵 ────────────────────────────────────────────────
+   단일 파일이 2.2MB 까지 커져 크롤러가 한 번에 받아 가기 버거웠다.
+   인덱스 + 3개로 쪼갠다. /sitemap.xml 은 인덱스만 돌려주므로 응답이 작다. */
+const XMLHEAD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+function sitemapIndex(){
   const today=isoDate(new Date());
-  let u="<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
+  let x=XMLHEAD+"<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
+  ["/sitemap-main.xml","/sitemap-r.xml","/sitemap-d.xml"].forEach(function(p){
+    x+="<sitemap><loc>"+SITE+p+"</loc><lastmod>"+today+"</lastmod></sitemap>";
+  });
+  return x+"</sitemapindex>";
+}
+function sitemapMain(){
+  const today=isoDate(new Date());
+  let u=XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
   u+="<url><loc>"+SITE+"/</loc><lastmod>"+today+"</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>";
   u+="<url><loc>"+SITE+"/list</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>";
   u+=postSitemapXml();   /* 정보성 글 — lastmod 는 실제 발행일 */
   u+="<url><loc>"+SITE+"/d</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>";
-  SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl){ const m=isoDate(modifiedDate(hash("sido:"+s))); u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>"; } });
+  SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl){ const m=isoDate(modifiedDate(hash("sido:"+s))); u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; } });
   for(const k in GUNGU_SLUGS){ const m=isoDate(modifiedDate(hash("gungu:"+k))); u+="<url><loc>"+SITE+"/sigungu/"+GUNGU_SLUGS[k]+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; }
+  return u+"</urlset>";
+}
+function sitemapR(){
+  let u=XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
   for(const r of REGIONS){
     const mod=modifiedDate(hash(r.s));
     u+="<url><loc>"+SITE+"/r/"+r.s+"</loc><lastmod>"+isoDate(mod)+"</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>";
   }
+  return u+"</urlset>";
+}
+function sitemapD(){
+  let u=XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
   for(const r of REGIONS){
     const dm=modifiedDate(hash("d:"+r.s));
     u+="<url><loc>"+SITE+"/d/"+r.s+"</loc><lastmod>"+isoDate(dm)+"</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>";
@@ -2279,7 +2362,10 @@ const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[
     }
     /* 사이트맵·RSS 생성 함수는 동기라 POSTS_CACHE 를 먼저 채워 준다 */
     if(path.startsWith("/sitemap")||path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed"||path==="/atom.xml"||path==="/atom") await loadPosts(env);
-    if(path==="/sitemap.xml") return resp(sitemap(),"application/xml; charset=UTF-8");
+    if(path==="/sitemap.xml") return resp(sitemapIndex(),"application/xml; charset=UTF-8");
+    if(path==="/sitemap-main.xml") return resp(sitemapMain(),"application/xml; charset=UTF-8");
+    if(path==="/sitemap-r.xml") return resp(sitemapR(),"application/xml; charset=UTF-8");
+    if(path==="/sitemap-d.xml") return resp(sitemapD(),"application/xml; charset=UTF-8");
     if(path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed") return resp(rssFeed(),"application/rss+xml; charset=UTF-8");
     if(path==="/atom.xml"||path==="/atom") return resp(atomFeed(),"application/atom+xml; charset=UTF-8");
     if(path==="/list"||path==="/sitemap.html") return resp(listPage(),"text/html; charset=UTF-8");
