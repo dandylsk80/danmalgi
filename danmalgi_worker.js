@@ -311,17 +311,17 @@ function fixJosa(s,names){
 }
 // 핵심어 토큰: {K}=카드단말기, {DK}=동네+핵심어(완전조합), {D2}=지역명 대신 쓰는 대명사형
 const KW_R = "카드단말기";
-const D2POOL = ["이 동네","우리 동네","같은 상권","이 지역","가까운 상권"];
+const D2POOL = ["이 동네","우리 동네","이 지역"];
 // «가|나|다» 중 하나를 씨앗으로 고른다 (같은 문장이라도 페이지마다 갈린다)
 function pickVar(s,seed){ let i=0; return String(s).replace(/«([^»]*)»/g,function(_,g){ const a=g.split("|"); return a[(seed+(i++)*7)%a.length]; }); }
 function fill(s,R){
   s=pickVar(s,R._syn);
-  let d2i=0;
+  let d2i=0; const d2used=[];
   s=s.replace(/\{DK\}/g,R._dong+" "+KW_R).replace(/\{K\}/g,KW_R)
-     .replace(/\{D2\}/g,function(){ return D2POOL[(R._syn+(d2i++)*11)%D2POOL.length]; });
+     .replace(/\{D2\}/g,function(){ const v=D2POOL[(R._syn+(d2i++)*11)%D2POOL.length]; if(d2used.indexOf(v)<0)d2used.push(v); return v; });
   s=s.replace(/\{F\}/g,R.n).replace(/\{S\}/g,R._sido).replace(/\{G\}/g,R._gungu||R._sido).replace(/\{D\}/g,R._dong);
   s=applySyn(s,R._syn);
-  s=fixJosa(s,[R.n,R._sido,R._gungu||R._sido,R._dong]);
+  s=fixJosa(s,[R.n,R._sido,R._gungu||R._sido,R._dong].concat(d2used));
   if(R._dedup){ // 시도/시군구 글: 같은 지역명이 인접 반복되는 경우 정리
     const names=[R._dong,R._gungu,R._sido].filter(function(v,i,a){return v&&a.indexOf(v)===i;});
     for(const nm of names){ let prev; do{ prev=s;
@@ -329,6 +329,27 @@ function fill(s,R){
     }while(s!==prev); }
   }
   return s;
+}
+
+/* 제목 형식: "○○동 카드단말기 설치 | ○○시" (/d 는 "○○동 매장 철거 | ○○시").
+   30자를 넘으면 뒤 지역을 떼어 맞춘다 — 검색결과에서 잘리면 핵심어가 먼저 죽는다. */
+function shortTitle(R,kw){
+  const base=R._dong+" "+kw;
+  const full=base+" | "+(R._gungu||R._sido);
+  return full.length<=30 ? full : base;
+}
+/* 인근 링크용 — 읍면동이 적은 군 지역은 같은 시군구만으로는 링크가 한 자릿수로
+   떨어진다. 모자라면 같은 시도의 다른 동네로 채운다. */
+const SIDO_ALL = new Map();
+for (const r of REGIONS) {
+  if (!SIDO_ALL.has(r._sido)) SIDO_ALL.set(r._sido, []);
+  SIDO_ALL.get(r._sido).push(r);
+}
+function nearSibs(R, n){
+  const out=[], seen=new Set([R.s]);
+  for(const x of (GROUPS.get(R._sido+"|"+R._gungu)||[])){ if(!seen.has(x.s)){ seen.add(x.s); out.push(x); if(out.length>=n) return out; } }
+  for(const x of (SIDO_ALL.get(R._sido)||[])){ if(!seen.has(x.s)){ seen.add(x.s); out.push(x); if(out.length>=n) return out; } }
+  return out;
 }
 
 const DAY=86400000, PERIOD=18;
@@ -558,9 +579,9 @@ const FAQ = [
    "물론입니다. {G}의 매장에서 잔고장이 잦거나 새 결제가 안 된다면 교체를 권합니다. 과정은 처음 설치와 크게 다르지 않습니다."]}
 ];
 const DESC = [
- "{F} 카드단말기 설치 안내. 유선·무선·포스·간편결제까지, {D} 매장에 맞는 결제 환경을 차분히 정리했습니다.",
- "{D}에서 카드단말기를 새로 들이거나 바꾸려는 사장님을 위한 안내. {G} 상권에 맞춘 단말기 선택과 설치 흐름을 담았습니다.",
- "{F}에서 결제는 어떻게 시작할까요. 가격이나 수치가 아니라 우리 가게에 맞는 기준으로 카드단말기를 풀어 드립니다."
+ "{F} 카드단말기 설치·교체 방문 안내. 유선·무선·포스·간편결제까지 {D} 매장에 맞춰 구성하고, 가맹 신청부터 개통·사후 관리까지 한 번에 진행합니다. 설치비·월 관리비 0원. 지금 "+PHONE+"로 전화 주시면 바로 안내해 드립니다.",
+ "{D}에서 카드단말기를 새로 들이거나 바꾸려는 사장님을 위한 안내입니다. {G} 상권과 계산대 자리에 맞춰 단말기를 고르고, 설치부터 사용법 안내까지 이어집니다. 설치비·월 관리비 0원, 상담은 "+PHONE+"로 전화 한 통이면 됩니다.",
+ "{F}에서 결제는 어떻게 시작할까요. 유선과 무선 선택부터 가맹 서류와 설치 절차까지 우리 가게 기준으로 카드단말기를 풀어 드립니다. 설치비·월 관리비 0원이고 견적만 받아 보셔도 됩니다. "+PHONE+"로 편하게 문의하세요."
 ];
 const CTA_T = [
  "{D}에서 시작하시나요?",
@@ -744,22 +765,32 @@ function buildArticle(R){
     return esc(fill(txt, R));
   };
   const geo = (id)=>(hash(R.s+id+"geo")%10 < 7) ? esc(R._dong)+" " : "";
-  /* 완전조합("○○동 카드단말기")을 만드는 섹션을 7개만 고정으로 뽑는다.
-     HEADK 제목은 반드시 핵심어로 시작하므로 동네명을 앞에 붙이면 곧 완전조합이 된다. */
-  const KSEC = new Set(shuffle(Object.keys(HEADK), hash(R.s+"kh")).slice(0,7));
-  /* H2 19개 중 10개를 토스단말기 겹침으로 돌린다 (절반). 겹침 제목도 카드단말기를
+  /* H2 는 11개로 묶는다 — 섹션 9 + FAQ + 마무리. 섹션 9개는 HEADK 가 있는(=제목에
+     카드단말기가 들어가는) 13개 중에서만 고른다. 나머지 8개 섹션은 본문을 그대로 두고
+     H3 로 내려 분량을 지킨다. */
+  const H2SEC = new Set(shuffle(Object.keys(HEADK), hash(R.s+"h2")).slice(0,9));
+  const h2Ord = SEC_IDS.filter(function(x){ return H2SEC.has(x); });
+  /* 완전조합("○○동 카드단말기")을 만드는 H2 7개. HEADK 제목은 반드시 핵심어로
+     시작하므로 동네명을 앞에 붙이면 곧 완전조합이 된다. */
+  const KSEC = new Set(shuffle(h2Ord, hash(R.s+"kh")).slice(0,7));
+  /* 동네명 H2 8개 = 완전조합 7 + 아래 1. 이 자리는 핵심어가 제목 중간에 있는 HEADS·TOSSS
+     를 쓰므로 동네명을 붙여도 완전조합이 늘지 않는다. */
+  const GSEC = h2Ord.filter(function(x){ return !KSEC.has(x); })[hash(R.s+"g8")%2];
+  /* H2 11개 중 6개를 토스단말기 겹침으로 돌린다. 겹침 제목도 카드단말기를
      품고 있으므로 카드단말기 H2 비율은 떨어지지 않는다. */
-  const TSEC = new Set(shuffle(SEC_IDS, hash(R.s+"ts")).slice(0,10));
+  const TSEC = new Set(shuffle(h2Ord, hash(R.s+"ts")).slice(0,6));
   const headFor = (id)=>{
-    if(KSEC.has(id) && HEADK[id]){
+    if(KSEC.has(id)){
       const pool = (TSEC.has(id) && TOSSK[id]) ? TOSSK[id] : HEADK[id];
       return esc(R._dong)+" "+esc(fill(pick(pool,hash(R.s+id+"hk")),R));
     }
-    /* 동네명을 붙이지 않는다 — 붙이면 완전조합이 7개 넘게 늘어난다 */
-    if(TSEC.has(id) && TOSSS[id]) return esc(fill(pick(TOSSS[id],hash(R.s+id+"th")),R));
-    return geo(id)+h(id);
+    const pre = id===GSEC ? esc(R._dong)+" " : "";
+    if(TSEC.has(id) && TOSSS[id]) return pre+esc(fill(pick(TOSSS[id],hash(R.s+id+"th")),R));
+    return pre+h(id);
   };
-  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+ICON[id]+"</span>"+headFor(id)+"</h2><p>"+compose(id,2)+"</p>";
+  const SEC = (id)=> H2SEC.has(id)
+    ? "<h2><span class='h2ic "+iconCls(id)+"'>"+ICON[id]+"</span>"+headFor(id)+"</h2><p>"+compose(id,2)+"</p>"
+    : "<h3><span class='h2ic "+iconCls(id)+"'>"+ICON[id]+"</span>"+geo(id)+h(id)+"</h3><p>"+compose(id,2)+"</p>";
 
   const keybox="<div class='keybox'><div class='keybox-t'>📜 한눈에 보기</div><ul>"+
     "<li>"+esc(fill("{D} 어디서나 유선·무선·포스·간편결제 설치를 안내합니다.",R))+"</li>"+
@@ -998,9 +1029,9 @@ const FAQ_D=[
 ];
 
 const DESC_D=[
- "{F} 매장 원상복구 철거 안내. 폐업·이전 시 범위 산정부터 철거, 폐기물 반출과 임대인 확인까지 {D} 현장에 맞춰 정리해 드립니다.",
- "{D}에서 가게를 정리하시나요. 계약서와 현장 상태를 함께 보고 원상복구 범위를 잡습니다. {G} 상권 여건에 맞춘 철거·원상복구 안내입니다.",
- "{F} 원상복구 철거. 어디까지 걷어내야 하는지, 일정은 어떻게 잡아야 하는지 현장 확인 후 차분히 안내해 드립니다."
+ "{F} 매장 원상복구 철거 안내. 폐업·이전 시 범위 산정부터 철거, 폐기물 반출과 임대인 확인까지 {D} 현장에 맞춰 정리해 드립니다. 현장 확인·견적은 무료입니다. 지금 "+PHONE+"로 전화 주시면 바로 일정을 잡아 드립니다.",
+ "{D}에서 가게를 정리하시나요. 계약서와 현장 상태를 함께 보고 원상복구 범위를 잡습니다. {G} 상권 여건에 맞춘 철거·원상복구 안내입니다. 현장 확인·견적 무료, 상담은 "+PHONE+"로 전화 한 통이면 됩니다.",
+ "{F} 원상복구 철거. 어디까지 걷어내야 하는지, 일정은 어떻게 잡아야 하는지 현장 확인 후 차분히 안내해 드립니다. 현장 확인·견적은 무료이고 범위만 물어보셔도 됩니다. "+PHONE+"로 편하게 문의하세요."
 ];
 const CTA_TD=[
  "{D} 매장, 정리하시나요?",
@@ -1021,7 +1052,12 @@ function buildArticleD(R){
     return esc(fill(p+" "+rl, R));
   };
   const geo = (id)=>(hash(R.s+"d"+id+"geo")%10 < 7) ? esc(R._dong)+" " : "";
-  const SEC = (id)=>"<h2><span class='h2ic "+iconCls(id)+"'>"+(ICON_D[id]||"🧱")+"</span>"+geo(id)+h(id)+"</h2><p>"+compose(id)+"</p>";
+  /* H2 11개 = 섹션 9 + FAQ + 마무리. 섹션 H2 9개 중 8개에 동네명을 붙이고,
+     남는 2개 섹션은 본문을 두고 H3 로 내려 분량을 지킨다. */
+  const SEC = (id,i)=> i<9
+    ? "<h2><span class='h2ic "+iconCls(id)+"'>"+(ICON_D[id]||"🧱")+"</span>"+(i===noGeo?"":esc(R._dong)+" ")+h(id)+"</h2><p>"+compose(id)+"</p>"
+    : "<h3><span class='h2ic "+iconCls(id)+"'>"+(ICON_D[id]||"🧱")+"</span>"+geo(id)+h(id)+"</h3><p>"+compose(id)+"</p>";
+  const noGeo = hash(R.s+"dng")%9;
 
   const KB1=["{D} 어디서나 매장 원상복구 철거를 현장 확인 후 진행합니다.","{D} 전역으로 방문해 폐업·이전 매장을 정리합니다.","{D} 매장까지 찾아가 철거 범위부터 함께 짚어 드립니다."];
   const KB2=["계약서와 인수 당시 상태를 기준으로 걷어낼 범위를 함께 정합니다.","무엇을 남기고 무엇을 뜯을지 계약 조건에 맞춰 나눕니다.","입주 당시 자료를 근거로 되돌릴 선을 명확히 잡습니다."];
@@ -1049,7 +1085,7 @@ function buildArticleD(R){
   const callout="<div class='callout'><span class='co-ic'>🪔</span><p>"+esc(fill(pick(RLINE_D,hash(R.s+"dtip")),R))+"</p></div>";
 
   const ord=shuffle(["d2","d3","d4","d5","d6","d7","d8","d9","d10","d12","d13","d14","d15","d16"], hash(R.s+"dord")).slice(0,11);
-  let items=ord.map(SEC);
+  let items=ord.map(function(id,i){ return SEC(id,i); });
   const vis=shuffle([keybox,compare,flow,callout], hash(R.s+"dvis")).slice(0,3);
   const base=[0, 2+(hash(R.s+"dj0")%2), 5+(hash(R.s+"dj1")%2)];
   const ins=vis.map(function(b,i){var p=base[i]; if(p>items.length)p=items.length; return {b:b,p:p};}).sort(function(a,b){return b.p-a.p;});
@@ -1078,20 +1114,18 @@ function faqJsonLdD(R){
 function demolitionPage(R){
   const seed=hash("d:"+R.s);
   const pub=publishedDate(seed), mod=modifiedDate(seed);
-  const T=[
-    (R._gungu?R._gungu+" ":"")+R._dong+" 매장 원상복구 철거 — 폐업·이전 정리 | "+BRAND,
-    R._dong+" 원상복구 철거 "+(R._gungu?R._gungu+" ":"")+"인테리어 철거·폐기물 처리 | "+BRAND,
-    R._dong+" 상가 원상복구 어디까지? "+R._sido+(R._gungu?" "+R._gungu:"")+" 방문 확인 | "+BRAND
-  ];
-  const title=T[seed%3];
-  const desc=fill(pick(DESC_D,seed),R)+" 상담 "+PHONE+".";
+  const title=shortTitle(R,"매장 철거");
+  const desc=fill(pick(DESC_D,seed),R);
   const url=SITE+"/d/"+encodeURIComponent(R.s);
-  const sibs=(GROUPS.get(R._sido+"|"+R._gungu)||[]).filter(x=>x.s!==R.s).slice(0,12);
-  const near=sibs.length?("<div class=near><h3>📍 "+esc(R._gungu||R._sido)+" 다른 동네</h3><div class=g>"+
+  const sibs=nearSibs(R,24);
+  const near=sibs.length?("<div class=near><h3>📍 "+esc(R._gungu||R._sido)+" 인근 동네 원상복구</h3><div class=g>"+
      sibs.map(x=>"<a href=\"/d/"+x.s+"\">"+esc(x._dong)+"</a>").join("")+
+     (R._gunguSlug?("<a class='more' href=\"/sigungu/"+R._gunguSlug+"\">"+esc(R._gungu)+" 전체 보기 →</a>"):"")+
      "</div></div>"):"";
   const xlink="<div class=near><h3>🔗 함께 보기</h3><div class=g>"+
-     "<a href=\"/r/"+R.s+"\">"+esc(R._dong)+" 카드단말기 설치 →</a></div></div>";
+     "<a href=\"/r/"+R.s+"\">"+esc(R._dong)+" 카드단말기 설치 →</a>"+
+     sibs.slice(0,12).map(x=>"<a href=\"/r/"+x.s+"\">"+esc(x._dong)+" 카드단말기</a>").join("")+
+     "<a href=\"/sido/"+R._sidoSlug+"\">"+esc(R._sido)+" 전체 →</a><a href=\"/d\">전국 철거 목록 →</a></div></div>";
   const body =
    "<div class='bgart'>"+bgArt()+"</div>"+
    "<div class='col rpage'>"+
@@ -1105,6 +1139,7 @@ function demolitionPage(R){
      heroBanner(photoForD(seed), "🧱 "+esc(R.n), R._dong+" 매장 원상복구 철거")+
      "<div class='meta2'><span>📜 발행 <b>"+korDate(pub)+"</b></span><span>🔄 수정 <b>"+korDate(mod)+"</b></span><span>📍 "+esc(R._sido)+"</span></div>"+
      buildArticleD(R)+
+     PRINCIPLE_D+
      "<div class=cta><div class=t>"+esc(fill(pick(CTA_TD,hash(R.s+"dct")),R))+"</div><p>"+esc(fill(pick(CTA_BD,hash(R.s+"dcb")),R))+"</p>"+telBtn("")+"</div>"+
      xlink+near+
    "</article></div>";
@@ -1223,6 +1258,7 @@ article h1{font-family:'Nanum Myeongjo',serif;font-size:clamp(30px,5vw,46px);lin
 .meta{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);padding-bottom:26px;margin-bottom:30px;border-bottom:1px solid var(--line)}
 .meta b{color:var(--ink);font-weight:700}
 article h2{font-family:'Nanum Myeongjo',serif;font-size:clamp(21px,3vw,27px);margin:42px 0 14px;letter-spacing:-.02em;font-weight:800}
+article>h3{font-family:'Nanum Myeongjo',serif;font-size:clamp(18px,2.4vw,22px);margin:34px 0 12px;letter-spacing:-.02em;font-weight:800}
 article p{font-size:17px;margin:0 0 4px;color:#26211b}
 article p.lead{font-size:19px;color:var(--ink);font-weight:500}
 .faq details{border:1px solid var(--line);border-radius:3px;padding:4px 18px;margin:10px 0;background:var(--soft)}
@@ -1673,15 +1709,18 @@ for(var i=0;i<els.length;i++)io.observe(els[i]);})();
 `;
 
 // ---------- 지역 페이지 ----------
+/* 후기·별점 자리. 지어낸 이름과 ★ 를 쓰지 않는다는 원칙만 한 줄로 밝힌다. */
+const PRINCIPLE = "<p class=principle style=\"margin:22px 0 0;font-size:14px;color:var(--muted)\">가짜 별점·후기를 쓰지 않습니다. 설치 후 실제 피드백만 반영합니다.</p>";
+const PRINCIPLE_D = PRINCIPLE.replace("설치 후","작업 후");
 function regionPage(R){
   const seed=hash(R.s);
   const pub=publishedDate(seed), mod=modifiedDate(seed);
-  const title=(R._gungu?R._gungu+" ":"")+R._dong+" 카드단말기 / 토스단말기 설치 | "+R._sido+(R._gungu?" "+R._gungu:"")+" 카드단말기 전문 — "+BRAND;
+  const title=shortTitle(R,"카드단말기 설치");
   const desc=fill(pick(DESC,seed),R);
   const url=SITE+"/r/"+encodeURIComponent(R.s);
   // 인근(같은 시군구) 링크
-  const sibs=(GROUPS.get(R._sido+"|"+R._gungu)||[]).filter(x=>x.s!==R.s).slice(0,12);
-  const near=sibs.length?("<div class=near><h3>📍 "+esc(R._gungu||R._sido)+" 다른 동네</h3><div class=g>"+
+  const sibs=nearSibs(R,24);
+  const near=sibs.length?("<div class=near><h3>📍 "+esc(R._gungu||R._sido)+" 인근 동네 카드단말기</h3><div class=g>"+
      sibs.map(x=>"<a href=\"/r/"+x.s+"\">"+esc(x._dong)+"</a>").join("")+
      (R._gunguSlug?("<a class='more' href=\"/sigungu/"+R._gunguSlug+"\">전체 보기 →</a>"):"")+
      "</div></div>"):"";
@@ -1698,7 +1737,10 @@ function regionPage(R){
      heroBanner(photoFor(seed), "📍 "+esc(R.n), R._dong+" 카드단말기 / 토스단말기 설치 안내")+
      "<div class='meta2'><span>📜 발행 <b>"+korDate(pub)+"</b></span><span>🔄 수정 <b>"+korDate(mod)+"</b></span><span>📍 "+esc(R._sido)+"</span></div>"+
      buildArticle(R)+
-     "<div class=near><h3>\ud83d\udd17 \ud568\uaed8 \ubcf4\uae30</h3><div class=g><a href=\"/d/"+R.s+"\">"+esc(R._dong)+" \ub9e4\uc7a5 \uc6d0\uc0c1\ubcf5\uad6c \ucca0\uac70 \u2192</a></div></div>"+
+     "<div class=near><h3>\ud83d\udd17 \ud568\uaed8 \ubcf4\uae30</h3><div class=g><a href=\"/d/"+R.s+"\">"+esc(R._dong)+" \ub9e4\uc7a5 \uc6d0\uc0c1\ubcf5\uad6c \ucca0\uac70 \u2192</a>"+
+       sibs.slice(0,12).map(x=>"<a href=\"/d/"+x.s+"\">"+esc(x._dong)+" 원상복구</a>").join("")+
+       "<a href=\"/sido/"+R._sidoSlug+"\">"+esc(R._sido)+" 전체 →</a><a href=\"/list\">전국 카드단말기 목록 →</a></div></div>"+
+     PRINCIPLE+
      "<div class=cta><div class=t>"+esc(fill(pick(CTA_T,hash(R.s+"ct")),R))+"</div><p>"+esc(fill(pick(CTA_B,hash(R.s+"cb")),R))+"</p>"+telBtn("")+"</div>"+
      near+
    "</article></div>";
@@ -1747,6 +1789,7 @@ function sidoArtR(sido){ const key="sido:"+sido; return {n:sido, s:key, _sido:si
 function gunguArtR(sido,gungu){ const key="gungu:"+sido+"|"+gungu; return {n:sido+" "+gungu, s:key, _sido:sido, _gungu:gungu, _dong:gungu, _syn:hash(key), _dedup:true}; }
 function listingPage(o){
   const items=o.items.map(it=>"<a href=\""+it.href+"\">"+esc(it.label)+"<span class=ar>›</span></a>").join("");
+  const items2=(o.items2||[]).map(it=>"<a href=\""+it.href+"\">"+esc(it.label)+"<span class=ar>›</span></a>").join("");
   const meta = o.pub ? ("<div class='meta2'><span>📜 발행 <b>"+korDate(o.pub)+"</b></span><span>🔄 수정 <b>"+korDate(o.mod)+"</b></span><span>📍 "+esc(o.metaTag)+"</span></div>") : "";
   const body=
    "<div class='bgart'>"+bgArt()+"</div>"+
@@ -1759,6 +1802,7 @@ function listingPage(o){
      "<h2><span class='h2ic c-gunchung'>🗺️</span>"+esc(o.gridTitle||"바로가기")+"</h2>"+
      "<p class='listing-intro'>"+esc(o.intro)+"</p>"+
      "<div class='lgrid'>"+items+"</div>"+
+     (items2 ? ("<h2><span class='h2ic c-juchil'>🧱</span>"+esc(o.gridTitle2||"")+"</h2><p class='listing-intro'>"+esc(o.intro2||"")+"</p><div class='lgrid'>"+items2+"</div>") : "")+
      "<div class=cta><div class=t>"+esc(o.ctaT)+"</div><p>"+esc(o.ctaB)+"</p>"+telBtn("","📞 전화 상담")+"</div>"+
      (o.after||"")+
    "</article></div>";
@@ -1771,6 +1815,8 @@ function sidoPage(sido){
   if(gungus.length) items=gungus.map(g=>({label:g, href:"/sigungu/"+(GUNGU_SLUGS[sido+"|"+g]||"")}));
   const direct=GROUPS.get(sido+"|")||[];
   if(direct.length) items=items.concat(direct.map(r=>({label:r._dong, href:"/r/"+r.s})));
+  /* 시군구 없이 바로 읍면동이 오는 시도(세종)는 /d 도 여기서 전부 건다 */
+  const items2=direct.map(r=>({label:r._dong+" 원상복구", href:"/d/"+r.s}));
   const R=sidoArtR(sido), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
     title: sido+" 카드단말기 설치 안내 — "+(gungus.length?"시군구":"읍면동")+" | "+BRAND,
@@ -1784,7 +1830,10 @@ function sidoPage(sido){
     gridTitle: sido+"의 "+(gungus.length?"시·군·구 바로가기":"읍·면·동 바로가기"),
     intro: sido+"의 "+(gungus.length?"시·군·구":"읍·면·동")+"를 눌러 우리 동네 카드단말기 안내로 들어가세요.",
     items: items,
-    after: demolitionLinkBlock(sido, regionsOfSido(sido), 24),
+    items2: items2,
+    gridTitle2: items2.length ? sido+"의 읍·면·동 매장 철거 바로가기" : "",
+    intro2: items2.length ? sido+"의 읍·면·동을 눌러 매장 원상복구 철거 안내로 들어가세요." : "",
+    after: items2.length ? "" : demolitionLinkBlock(sido, regionsOfSido(sido), 24),
     ctaT: sido+", 어디서든 설치",
     ctaB: "매장 위치와 업종만 알려 주세요. "+sido+" 어느 동네든 맞는 단말기를 함께 찾아 드립니다.",
     jsonld:[
@@ -1800,6 +1849,8 @@ function sigunguPage(info){
   const sido=info.sido, gungu=info.gungu, key=info.key;
   const slug=GUNGU_SLUGS[key], sidoSlug=SIDO_SLUGS[sido], url=SITE+"/sigungu/"+slug;
   const items=(GROUPS.get(key)||[]).map(r=>({label:r._dong, href:"/r/"+r.s}));
+  /* 종전엔 갱신일 최신 30개만 걸어 /d 일부가 허브에서 닿지 않았다 — 전부 건다 */
+  const items2=(GROUPS.get(key)||[]).map(r=>({label:r._dong+" 원상복구", href:"/d/"+r.s}));
   const R=gunguArtR(sido,gungu), seed=hash(R.s), pub=publishedDate(seed), mod=modifiedDate(seed);
   return listingPage({
     title: gungu+" 카드단말기 설치 안내 — 읍면동 | "+BRAND,
@@ -1813,7 +1864,9 @@ function sigunguPage(info){
     gridTitle: gungu+"의 읍·면·동 바로가기",
     intro: gungu+"의 읍·면·동을 눌러 우리 동네 카드단말기 안내로 들어가세요.",
     items: items,
-    after: demolitionLinkBlock(gungu, GROUPS.get(key)||[], 30),
+    items2: items2,
+    gridTitle2: gungu+"의 읍·면·동 매장 철거 바로가기",
+    intro2: gungu+"의 읍·면·동을 눌러 매장 원상복구 철거 안내로 들어가세요.",
     ctaT: gungu+"에서 시작하세요",
     ctaB: "매장 위치와 업종만 알려 주세요. "+gungu+"에 맞는 단말기를 함께 짚어 드립니다.",
     jsonld:[
@@ -1867,23 +1920,25 @@ function sitemapMain(){
   u+="<url><loc>"+SITE+"/list</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>";
   u+=postSitemapXml();   /* 정보성 글 — lastmod 는 실제 발행일 */
   u+="<url><loc>"+SITE+"/d</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>";
-  SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl){ const m=isoDate(modifiedDate(hash("sido:"+s))); u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; } });
-  for(const k in GUNGU_SLUGS){ const m=isoDate(modifiedDate(hash("gungu:"+k))); u+="<url><loc>"+SITE+"/sigungu/"+GUNGU_SLUGS[k]+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; }
+  SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl){ const m=today; u+="<url><loc>"+SITE+"/sido/"+sl+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; } });
+  for(const k in GUNGU_SLUGS){ const m=today; u+="<url><loc>"+SITE+"/sigungu/"+GUNGU_SLUGS[k]+"</loc><lastmod>"+m+"</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>"; }
   return u+"</urlset>";
 }
+/* lastmod 는 전 URL 오늘 날짜로 낸다 — 365posmall 9/23 개편과 같은 방식.
+   IndexNow 회차 선정에 쓰는 modifiedDate 는 건드리지 않아 하루 제출량은 그대로다. */
 function sitemapR(){
+  const today=isoDate(new Date());
   let u=XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
   for(const r of REGIONS){
-    const mod=modifiedDate(hash(r.s));
-    u+="<url><loc>"+SITE+"/r/"+r.s+"</loc><lastmod>"+isoDate(mod)+"</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>";
+    u+="<url><loc>"+SITE+"/r/"+r.s+"</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>";
   }
   return u+"</urlset>";
 }
 function sitemapD(){
+  const today=isoDate(new Date());
   let u=XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
   for(const r of REGIONS){
-    const dm=modifiedDate(hash("d:"+r.s));
-    u+="<url><loc>"+SITE+"/d/"+r.s+"</loc><lastmod>"+isoDate(dm)+"</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>";
+    u+="<url><loc>"+SITE+"/d/"+r.s+"</loc><lastmod>"+today+"</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>";
   }
   return u+"</urlset>";
 }
