@@ -1163,7 +1163,7 @@ function demolitionPage(R){
      {"@type":"HowToStep","position":4,"name":"정리·인계","text":"현장을 정리하고 임대인 확인까지 마칩니다."}]},
    {"@context":"https://schema.org","@type":"Service","serviceType":"매장 원상복구 철거","name":R._dong+" 매장 원상복구 철거","provider":{"@type":"Organization","name":BRAND,"telephone":PHONE},"areaServed":{"@type":"Place","name":R.n},"description":desc}
   ];
-  return shell({title,desc,url,article:true,jsonld,image:photoForD(seed)}, body);
+  return shell({title,desc,url,article:true,jsonld,pub,mod,image:photoForD(seed)}, body);
 }
 
 // ---------- 공통 HTML ----------
@@ -1187,6 +1187,8 @@ function head(o){
   '<link rel="alternate" type="application/rss+xml" title="'+BRAND+' RSS" href="'+SITE+'/rss.xml">',
   '<link rel="alternate" type="application/atom+xml" title="'+BRAND+' Atom" href="'+SITE+'/atom.xml">',
   '<meta property="og:type" content="'+(o.article?"article":"website")+'">',
+  o.pub?'<meta property="article:published_time" content="'+o.pub.toISOString()+'">':'',
+  o.mod?'<meta property="article:modified_time" content="'+o.mod.toISOString()+'">':'',
   '<meta property="og:title" content="'+esc(o.title)+'">',
   '<meta property="og:description" content="'+esc(o.desc)+'">',
   '<meta property="og:url" content="'+esc(o.url)+'">',
@@ -1765,7 +1767,7 @@ function regionPage(R){
      {"@type":"HowToStep","position":4,"name":"사용 교육·사후 지원","text":"현장에서 사용법을 알려드리고, 이후 고장·오류도 대응합니다."}]},
    {"@context":"https://schema.org","@type":"Service","serviceType":"카드단말기 설치","name":R._dong+" 카드단말기 설치","provider":{"@type":"Organization","name":BRAND,"telephone":PHONE},"areaServed":{"@type":"Place","name":R.n},"description":desc}
   ];
-  return shell({title,desc,url,article:true,jsonld,image:photoFor(seed)}, body);
+  return shell({title,desc,url,article:true,jsonld,pub,mod,image:photoFor(seed)}, body);
 }
 
 // ---------- 시도 / 시군구 계층 페이지 (하위페이지처럼 4000자+ 본문 포함) ----------
@@ -1806,7 +1808,7 @@ function listingPage(o){
      "<div class=cta><div class=t>"+esc(o.ctaT)+"</div><p>"+esc(o.ctaB)+"</p>"+telBtn("","📞 전화 상담")+"</div>"+
      (o.after||"")+
    "</article></div>";
-  return shell({title:o.title,desc:o.desc,url:o.url,article:true,jsonld:o.jsonld,image:o.image}, body);
+  return shell({title:o.title,desc:o.desc,url:o.url,article:true,jsonld:o.jsonld,pub:o.pub,mod:o.mod,image:o.image}, body);
 }
 function sidoPage(sido){
   const slug=SIDO_SLUGS[sido], url=SITE+"/sido/"+slug;
@@ -1902,16 +1904,16 @@ function findPage(qstr){
 
 // ---------- sitemap / robots / og ----------
 /* ── 사이트맵 ────────────────────────────────────────────────
-   단일 파일이 2.2MB 까지 커져 크롤러가 한 번에 받아 가기 버거웠다.
-   인덱스 + 3개로 쪼갠다. /sitemap.xml 은 인덱스만 돌려주므로 응답이 작다. */
+   main·r 과 세 번째 축을 따로 만드는 함수는 남겨 두고, 내보낼 때는 sitemapAll() 이
+   하나의 urlset 으로 합친다(09-22 인덱스 분할은 09-27 에 되돌렸다). */
 const XMLHEAD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-function sitemapIndex(){
-  const today=isoDate(new Date());
-  let x=XMLHEAD+"<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
-  ["/sitemap-main.xml","/sitemap-r.xml","/sitemap-d.xml"].forEach(function(p){
-    x+="<sitemap><loc>"+SITE+p+"</loc><lastmod>"+today+"</lastmod></sitemap>";
-  });
-  return x+"</sitemapindex>";
+/* 사이트맵은 단일 urlset 으로 낸다(semogwa 와 같은 방식). URL 1.3만·2.3MB 로 한도
+   (5만·50MB) 안이다. 인덱스로 쪼갰더니 네이버 Yeti 가 인덱스만 가져가고 하위 파일은
+   한 번도 가져가지 않았다. 하위 생성 함수는 그대로 두고 여기서 합친다. */
+function sitemapAll(){
+  const strip=function(x){ return x.slice(x.indexOf(">",x.indexOf("<urlset"))+1, x.lastIndexOf("</urlset>")); };
+  return XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"+
+    strip(sitemapMain())+strip(sitemapR())+strip(sitemapD())+"</urlset>";
 }
 function sitemapMain(){
   const today=isoDate(new Date());
@@ -2417,10 +2419,11 @@ const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[
     }
     /* 사이트맵·RSS 생성 함수는 동기라 POSTS_CACHE 를 먼저 채워 준다 */
     if(path.startsWith("/sitemap")||path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed"||path==="/atom.xml"||path==="/atom") await loadPosts(env);
-    if(path==="/sitemap.xml") return resp(sitemapIndex(),"application/xml; charset=UTF-8");
-    if(path==="/sitemap-main.xml") return resp(sitemapMain(),"application/xml; charset=UTF-8");
-    if(path==="/sitemap-r.xml") return resp(sitemapR(),"application/xml; charset=UTF-8");
-    if(path==="/sitemap-d.xml") return resp(sitemapD(),"application/xml; charset=UTF-8");
+    if(path==="/sitemap.xml") return resp(sitemapAll(),"application/xml; charset=UTF-8",{"cache-control":"public, max-age=3600"});
+    /* 옛 하위 사이트맵 주소 — 서치어드바이저·서치콘솔에 등록된 채로 남아 있을 수 있어 본 사이트맵으로 넘긴다 */
+    if(path==="/sitemap-main.xml") return Response.redirect(SITE+"/sitemap.xml",301);
+    if(path==="/sitemap-r.xml") return Response.redirect(SITE+"/sitemap.xml",301);
+    if(path==="/sitemap-d.xml") return Response.redirect(SITE+"/sitemap.xml",301);
     if(path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed") return resp(rssFeed(),"application/rss+xml; charset=UTF-8");
     if(path==="/atom.xml"||path==="/atom") return resp(atomFeed(),"application/atom+xml; charset=UTF-8");
     if(path==="/list"||path==="/sitemap.html") return resp(listPage(),"text/html; charset=UTF-8");
