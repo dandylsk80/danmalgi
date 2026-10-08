@@ -743,9 +743,48 @@ const ICON={s2:"⛰️",s10:"🪙",s3:"🪢",s11:"🧭",s16:"🪷",s4:"🧮",s12
 function iconCls(id){return ["c-juchil","c-gunchung","c-cheong","c-chija"][hash(id)%4];}
 /* 본문에 H2 로 나가는 섹션 순서 — buildArticle 의 SEC 호출과 같아야 한다 */
 const SEC_IDS = ["s2","s10","s3","s11","s16","s4","s12","s5","s17","s6","s13","s7","s14","s18","s8","s15","s19"];
+/* ── 2026-10-09 /r 핵심어 밀도 완화 ───────────────────────────────
+   /d(색인 44%)에 맞춰 /r(색인 6%)의 완전조합·H2 핵심어·본문 핵심어를 낮춘다.
+   · 제목(H1)·H2 는 핵심어 없는 자연 제목(HEADN). 토스단말기는 H1 + H2 한 곳(TOSSN)만.
+   · 핵심어 문장(KSENT)은 전 섹션에 그대로 넣되, 고른 4개 섹션(KWSEC)에서만 {K}=카드단말기,
+     (고른 6개 섹션(KWSEC)에서만) 나머지는 "단말기"로 풀어 분량·정보는 유지한다. 완전조합 {DK} 는 리드 4/10 페이지만.
+   · 토스 문장은 토스 H2 섹션 첫 문장 하나(이 단말기)로만 둔다. */
+const HEADN = {
+  s2:["단말기 선택, 동네부터 보는 이유","상권이 갈라놓는 단말기 선택"],
+  s3:["유선과 무선, 어느 쪽이 맞을까","가게의 움직임을 따르는 장비"],
+  s4:["간편결제까지 한 번에 받기","포스와 함께 볼 때"],
+  s5:["설치는 이렇게 진행됩니다","설치 순서 한눈에"],
+  s6:["가맹 신청과 서류","쓰기 전 거치는 절차"],
+  s7:["업종이 선택을 가릅니다","장사에 따라 달라지는 구성"],
+  s8:["설치 다음이 더 오래 갑니다","오래 쓰는 장비, 사후 관리"],
+  s10:["현금 없는 시대, 달라진 계산대","손님 지갑이 바뀌면 장비도 바뀝니다"],
+  s11:["연결 방식 살펴보기","인터넷과 어떻게 잇나"],
+  s12:["매출을 한눈에","정산까지 가볍게"],
+  s13:["바꿀 때가 됐다는 신호","교체를 생각할 시점"],
+  s14:["단골이 쌓이는 계산대","손님이 다시 오게 하는 결제"],
+  s15:["영수증과 장부, 같이 정리하기","정산이 가벼워지는 습관"],
+  s16:["동네 장사는 사람이 남습니다","단골은 사소한 편안함에서"],
+  s17:["바쁜 시간을 버티려면","몰릴 때 드러나는 차이"],
+  s18:["안심하고 쓸 수 있어야","믿을 만한 가게라는 인상"],
+  s19:["작은 가게일수록 든든해야","규모와 상관없는 준비"],
+  faq:["자주 묻는 점","먼저 풀고 가는 궁금증"],
+  end:["고르는 기준, 정리하면","마무리하며"]
+};
+const TOSSN = ["토스단말기도 함께 두고 보기","토스단말기가 맞는 가게, 아닌 가게","토스단말기와 카드단말기, 같이 볼 때"];
+const TSENT_N = [
+ "{D}에서도 이 단말기를 찾는 분이 늘었습니다. 기존 장비와 나란히 두고 쓰는 가게도 적지 않습니다.",
+ "이 단말기는 «간편결제에 익숙한 손님이 많은|젊은 손님이 오가는» 가게에서 «반응이 좋습니다|자주 선택됩니다».",
+ "기존 장비 하나로 갈지 이쪽을 «함께 둘지|보탤지»는 «{D}의 손님 결제 습관을 보고 정하면 됩니다|매장 사정에 맞춰 고르면 됩니다».",
+ "«이쪽으로 바꾸려는 분도|보태려는 분도» 기존 «가맹 정보를 이어 갈 수 있는지|조건이 어떻게 되는지» 먼저 확인하면 좋습니다.",
+ "«요즘은|최근에는» 이 단말기를 «먼저 묻는 사장님이 많습니다|콕 집어 찾는 분이 많습니다». {D}도 예외는 아닙니다.",
+ "기존 장비와의 «차이는 생각보다 단순합니다|갈림길은 복잡하지 않습니다»."
+];
+const softK = (t)=> String(t).replace(/\{DK\}/g,"{D}에 맞는 단말기").replace(/\{K\}/g,"단말기");
 function buildArticle(R){
-  const h = (id)=>esc(applySyn(pick(HEADS[id], hash(R.s+id)), R._syn));
-  const TXSEC = new Set(shuffle(SEC_IDS, hash(R.s+"tx")).slice(0,4));
+  const h = (id)=>esc(pick(HEADN[id]||HEADS[id], hash(R.s+id+"hn")));
+  /* 핵심어 {K} 를 살리는 섹션 6개 — 나머지는 "단말기"로 푼다 */
+  const KWSEC = new Set(shuffle(SEC_IDS, hash(R.s+"kws")).slice(0,6));
+  const keyOn = (id)=> KWSEC.has(id) || (id==="s1" && hash(R.s+"s1dk")%10 < 4);
   const compose = (id,kbase)=>{
     const pool=SENT[id];
     const sh=shuffle(pool, hash(R.s+id));
@@ -756,9 +795,10 @@ function buildArticle(R){
     sents.splice(hash(R.s+id+"p1")%(sents.length+1),0,rl1);
     sents.splice(hash(R.s+id+"p2")%(sents.length+1),0,rl2);
     /* 핵심어 문장 1개를 문단 안 임의 위치에 끼운다 */
-    if(KSENT[id]) sents.splice(id==="s1"?1:hash(R.s+id+"kp")%(sents.length+1),0,pickVar(pick(KSENT[id],hash(R.s+id+"kw")),hash(R.s+id+"kv")));
-    /* 토스단말기 문장 — 고른 4개 섹션에만 1문장씩 (본문 3~5회) */
-    if(TXSEC.has(id)) sents.splice(hash(R.s+id+"tp")%(sents.length+1),0,pickVar(pick(TSENT,hash(R.s+id+"tw")),hash(R.s+id+"tv")));
+    if(KSENT[id]){ let ks=pickVar(pick(KSENT[id],hash(R.s+id+"kw")),hash(R.s+id+"kv")); if(!keyOn(id)) ks=softK(ks);
+      sents.splice(id==="s1"?1:hash(R.s+id+"kp")%(sents.length+1),0,ks); }
+    /* 토스 문장 — 토스 H2 섹션 첫 문장 하나만 ("이 단말기"로 받는다) */
+    if(id===TOSSSEC) sents.splice(0,0,pickVar(pick(TSENT_N,hash(R.s+id+"tw")),hash(R.s+id+"tv")));
     /* 지역명이 한 페이지에 70회 넘게 반복돼 핵심어 비율을 눌렀다 — 3할을 대명사형으로 돌린다 */
     let txt=sents.join(" "), di=0;
     txt=txt.replace(/\{D\}/g,function(){ return (hash(R.s+id+"d"+(di++))%10 < 3) ? "{D2}" : "{D}"; });
@@ -770,22 +810,13 @@ function buildArticle(R){
      H3 로 내려 분량을 지킨다. */
   const H2SEC = new Set(shuffle(Object.keys(HEADK), hash(R.s+"h2")).slice(0,9));
   const h2Ord = SEC_IDS.filter(function(x){ return H2SEC.has(x); });
-  /* 완전조합("○○동 카드단말기")을 만드는 H2 7개. HEADK 제목은 반드시 핵심어로
-     시작하므로 동네명을 앞에 붙이면 곧 완전조합이 된다. */
-  const KSEC = new Set(shuffle(h2Ord, hash(R.s+"kh")).slice(0,7));
-  /* 동네명 H2 8개 = 완전조합 7 + 아래 1. 이 자리는 핵심어가 제목 중간에 있는 HEADS·TOSSS
-     를 쓰므로 동네명을 붙여도 완전조합이 늘지 않는다. */
-  const GSEC = h2Ord.filter(function(x){ return !KSEC.has(x); })[hash(R.s+"g8")%2];
-  /* H2 11개 중 6개를 토스단말기 겹침으로 돌린다. 겹침 제목도 카드단말기를
-     품고 있으므로 카드단말기 H2 비율은 떨어지지 않는다. */
-  const TSEC = new Set(shuffle(h2Ord, hash(R.s+"ts")).slice(0,6));
+  /* 동네명은 H2 9개 중 8개에 붙인다(/d 와 같은 비율). 제목이 핵심어로 시작하지 않으므로
+     완전조합은 생기지 않는다. 토스단말기 H2 는 한 곳. */
+  const noGeo = h2Ord[hash(R.s+"ng")%h2Ord.length];
+  const TOSSSEC = h2Ord[hash(R.s+"tsec")%h2Ord.length];
   const headFor = (id)=>{
-    if(KSEC.has(id)){
-      const pool = (TSEC.has(id) && TOSSK[id]) ? TOSSK[id] : HEADK[id];
-      return esc(R._dong)+" "+esc(fill(pick(pool,hash(R.s+id+"hk")),R));
-    }
-    const pre = id===GSEC ? esc(R._dong)+" " : "";
-    if(TSEC.has(id) && TOSSS[id]) return pre+esc(fill(pick(TOSSS[id],hash(R.s+id+"th")),R));
+    const pre = id===noGeo ? "" : esc(R._dong)+" ";
+    if(id===TOSSSEC) return pre+esc(pick(TOSSN,hash(R.s+"tn")));
     return pre+h(id);
   };
   const SEC = (id)=> H2SEC.has(id)
@@ -820,12 +851,12 @@ function buildArticle(R){
   html += flow;
   html += SEC("s17")+SEC("s6")+SEC("s13")+SEC("s7")+SEC("s14")+SEC("s18")+SEC("s8")+SEC("s15")+SEC("s19");
   // FAQ
-  html += "<h2><span class='h2ic c-cheong'>🪔</span>"+esc(applySyn(pick(HEADS.faq,hash(R.s+"faq")),R._syn))+"</h2><div class=faq>";
+  html += "<h2><span class='h2ic c-cheong'>🪔</span>"+esc(pick(HEADN.faq,hash(R.s+"faq")))+"</h2><div class=faq>";
   faqItems(R).forEach((it,i)=>{
     html += "<details"+(i===0?" open":"")+"><summary>"+esc(it.q)+"</summary><p>"+esc(it.a)+"</p></details>";
   });
   html += "</div>";
-  html += "<h2><span class='h2ic c-juchil'>🌙</span>"+(hash(R.s+"end")%2?"카드단말기 선택, 정리하면":"마무리 — 카드단말기 고르는 기준")+"</h2><p>"+compose("s9",2)+"</p>";
+  html += "<h2><span class='h2ic c-juchil'>🌙</span>"+esc(pick(HEADN.end,hash(R.s+"end")))+"</h2><p>"+compose("s9",2)+"</p>";
   return html;
 }
 function faqItems(R){
