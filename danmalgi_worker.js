@@ -335,8 +335,8 @@ function fill(s,R){
    30자를 넘으면 뒤 지역을 떼어 맞춘다 — 검색결과에서 잘리면 핵심어가 먼저 죽는다. */
 function shortTitle(R,kw){
   const base=R._dong+" "+kw;
-  const full=base+" | "+(R._gungu||R._sido);
-  return full.length<=30 ? full : base;
+  const full=base+" — "+(R._gungu||R._sido);
+  return (full.length<=30 ? full : base)+" | "+BRAND;
 }
 /* 인근 링크용 — 읍면동이 적은 군 지역은 같은 시군구만으로는 링크가 한 자릿수로
    떨어진다. 모자라면 같은 시도의 다른 동네로 채운다. */
@@ -1681,7 +1681,7 @@ function homePage(){
    "<script>"+SEARCH_JS+REVEAL_JS+"<\/script>";
 
   return shell({
-    title:"단말기닷컴 — 카드단말기, 동네에서 시작하다",
+    title:"카드단말기, 동네에서 시작하다 — 전국 동네별 설치 안내 | "+BRAND,
     desc:"전국 시군구읍면동 카드단말기 설치 안내. 가격 비교가 아니라 우리 동네 상권에 맞춘 유선·무선·포스·간편결제 단말기 안내서.",
     url:SITE+"/",
     image:photoFor(hash("home")),
@@ -1900,7 +1900,7 @@ function findPage(qstr){
     "<section class=band><div class=near><div class=g>"+
     list.map(x=>"<a href=\"/r/"+encodeURIComponent(x.s)+"\">"+esc(x._dong)+" <small style=\"color:var(--muted)\">"+esc((x._gungu||x._sido))+"</small></a>").join("")+
     "</div></div></section></div>";
-  return shell({title:"‘"+qstr+"’ 검색 — "+BRAND, desc:qstr+" 카드단말기 설치 안내 검색 결과.", url:SITE+"/find?q="+encodeURIComponent(qstr)}, body);
+  return shell({title:"‘"+qstr+"’ 검색 | "+BRAND, desc:qstr+" 카드단말기 설치 안내 검색 결과.", url:SITE+"/find?q="+encodeURIComponent(qstr)}, body);
 }
 
 // ---------- sitemap / robots / og ----------
@@ -2123,7 +2123,7 @@ function listPage(){
      "<h2><span class='h2ic c-gunchung'>🗺️</span>시 · 도 전체</h2>"+
      "<div class='lgrid'>"+sidoLinks+"</div>"+
    "</article></div>";
-  return shell({title:"전체 안내 목록 — "+BRAND, desc:"전국 시·군·구·읍·면·동 카드단말기 설치 및 매장 원상복구 철거 안내 전체 목록과 최근 업데이트.", url:SITE+"/list", image:photoFor(hash("list")),
+  return shell({title:"전체 안내 목록 | "+BRAND, desc:"전국 시·군·구·읍·면·동 카드단말기 설치 및 매장 원상복구 철거 안내 전체 목록과 최근 업데이트.", url:SITE+"/list", image:photoFor(hash("list")),
     jsonld:{"@context":"https://schema.org","@type":"CollectionPage","name":"전체 안내 목록","url":SITE+"/list"}}, body);
 }
 function demolitionListPage(){
@@ -2258,7 +2258,7 @@ function b64bytes(b64){ const bin=atob(b64); const n=bin.length; const u=new Uin
 const OG_SVG=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="1200" height="630" fill="#F8F4EC"/><rect x="40" y="40" width="1120" height="550" fill="none" stroke="#16130F" stroke-width="2"/><text x="80" y="270" font-family="serif" font-size="92" font-weight="800" fill="#16130F">카드단말기,</text><text x="80" y="380" font-family="serif" font-size="92" font-weight="800" fill="#16130F">동네에서 <tspan fill="#C0532E">시작하다</tspan></text><line x1="80" y1="430" x2="430" y2="430" stroke="#16130F" stroke-width="3"/><text x="80" y="478" font-family="sans-serif" font-size="30" fill="#3A352E">유선 · 무선 · 포스 · 간편결제 설치 안내</text><text x="1080" y="540" text-anchor="end" font-family="sans-serif" font-size="34" font-weight="800" fill="#16130F">단말기<tspan fill="#C0532E">닷컴</tspan></text></svg>`;
 
 function notFound(){
-  return shell({title:"페이지를 찾을 수 없습니다 — "+BRAND, desc:"요청하신 페이지가 없습니다.", url:SITE+"/"},
+  return shell({title:"페이지를 찾을 수 없습니다 | "+BRAND, desc:"요청하신 페이지가 없습니다.", url:SITE+"/"},
    "<div class=col><section class=hero><span class=eyebrow><i></i>404</span><h1 class=serif style=\"font-size:clamp(30px,6vw,56px);margin-top:16px\">길을 잃으셨네요.</h1><p class=sub>찾으시는 동네가 있다면 <a href=\"/\" style=\"color:var(--clay);text-decoration:underline\">홈에서 검색</a>해 보세요.</p></section></div>");
 }
 function resp(html,type,extra){
