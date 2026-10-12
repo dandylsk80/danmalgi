@@ -176,7 +176,7 @@ function telBtn(cls, label, attrs){
 
 const PHONE     = "010-9876-8282";               // 표시용 전화번호
 const PHONE_TEL = "01098768282";                 // tel/sms 링크용(숫자만)
-const OG_IMAGE  = SITE + "/og.svg";              // 깃허브에 사진 올린 뒤 그 URL로 교체
+const OG_IMAGE  = "https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/og/og-default.png"; // 1200×630 PNG (카톡·네이버 미리보기 호환)
 const BRAND     = "단말기닷컴";
 // -------- 검색엔진 소유확인 (발급받은 'content' 값만 붙여넣기, 없으면 빈칸) --------
 const GOOGLE_VERIFY = "";   // Google Search Console (HTML 태그 방식)
@@ -193,6 +193,9 @@ const PHOTOS = ["pexels-419907350-37856472.jpg","pexels-anhdanghihi-20454105.jpg
 const PHOTOS_D = ["pexels-christina99999-30413428.jpg","pexels-francesco-ungaro-15798780.jpg","pexels-g-n-403098-29537620.jpg","pexels-iwashere-14840752.jpg","pexels-jplenio-1445324.jpg","pexels-kindelmedia-8488021.jpg","pexels-kindelmedia-8488037.jpg","pexels-mographe-15360461.jpg","pexels-nick-noyes-271794-19188877.jpg","pexels-noemiji-37663438.jpg","pexels-rezwan-1078884.jpg","pexels-sejio402-27134570.jpg","pexels-suntorn-somtong-386224-1029243.jpg","pexels-thirdman-5583614.jpg","pexels-tizzy-34965713.jpg"];
 function photoForD(seed){ if(!PHOTOS_D.length) return photoFor(seed); const i=((seed%PHOTOS_D.length)+PHOTOS_D.length)%PHOTOS_D.length; return IMG_BASE+"demo/"+encodeURIComponent(PHOTOS_D[i]); }
 function photoFor(seed){ if(!PHOTOS.length) return OG_IMAGE; const i=((seed%PHOTOS.length)+PHOTOS.length)%PHOTOS.length; return IMG_BASE+encodeURIComponent(PHOTOS[i]); }
+// og:image 용: image/ 사진 → og/ 의 같은 사진 1200×630 JPG 크롭본
+const OG_BASE = "https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/og/";
+function ogImg(u){ return (u && u.indexOf(IMG_BASE)===0) ? OG_BASE+u.slice(IMG_BASE.length) : (u||OG_IMAGE); }
 function heroBanner(img, ebHtml, h1text){
   return "<div class='hbann'>"+
     "<img src=\""+img+"\" alt=\""+esc(h1text)+"\" loading=\"eager\">"+
@@ -1224,10 +1227,11 @@ function head(o){
   '<meta property="og:title" content="'+esc(o.title)+'">',
   '<meta property="og:description" content="'+esc(o.desc)+'">',
   '<meta property="og:url" content="'+esc(o.url)+'">',
-  '<meta property="og:image" content="'+esc(o.image||OG_IMAGE)+'">',
+  '<meta property="og:image" content="'+esc(ogImg(o.image))+'">',
+  '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">',
   '<meta property="og:site_name" content="'+BRAND+'">',
   '<meta name="twitter:card" content="summary_large_image">',
-  '<meta name="twitter:image" content="'+esc(o.image||OG_IMAGE)+'">',
+  '<meta name="twitter:image" content="'+esc(ogImg(o.image))+'">',
   '<link rel="preconnect" href="https://cdn.jsdelivr.net">',
   '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
   '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">',
