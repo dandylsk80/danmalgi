@@ -171,7 +171,7 @@ document.addEventListener('click',show,true);})();
 `;
 /* 본문·푸터용 전화 버튼. aria-label 을 고정해 추적 라벨(b)이 흔들리지 않게 한다 */
 function telBtn(cls, label, attrs){
-  return "<a "+(cls?"class='"+cls+"' ":"")+(attrs?attrs+" ":"")+"href=\"tel:"+PHONE_TEL+"\" data-tel aria-label=\"전화 상담\"><span class=tel-lb>"+(label||"전화 상담")+"</span></a>";
+  return "<a "+(cls?"class='"+cls+"' ":"")+(attrs?attrs+" ":"")+"href=\"tel:"+PHONE_TEL+"\" data-tel aria-label=\"전화 상담\"><span class=tel-lb>"+(label||"전화 상담")+"</span></a><span class='telt tbtxt'>전화 "+PHONE+"</span>";
 }
 
 const PHONE     = "010-9876-8282";               // 표시용 전화번호
@@ -1241,6 +1241,9 @@ function head(o){
   ].join("");
 }
 const CSS = `
+/* PC(769px~)는 전화를 걸 수 없으니 tel: 버튼을 숨기고 번호를 일반 텍스트로 보인다. 모바일은 그대로 */
+.telt{display:none}
+@media(min-width:769px){a[href^="tel:"]{display:none!important}.telt{display:inline-flex;align-items:center}.telt.htel{font-family:'Gowun Batang',serif;font-size:14px;font-weight:800;color:var(--ink);padding:8px 0}.telt.tbtxt{font-weight:800;font-size:16px}.telt.fabt{gap:9px;padding:13px 17px;border-radius:13px;font-family:'Hahmlet','Nanum Myeongjo',serif;font-weight:800;font-size:14.5px;color:#F8F4EC;background:var(--juchil);box-shadow:0 9px 24px rgba(0,0,0,.25)}.telt.fabt .fab-ic{font-size:18px;line-height:1}}
 :root{--paper:#F8F4EC;--paper2:#F1EADC;--ink:#16130F;--clay:#C0532E;--clay2:#9C3F1E;--muted:#6F665B;--line:#E3DBCC;--soft:#FBF9F3}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -1552,7 +1555,7 @@ function shell(o, body){
         "<a href=\"/post/\">단말기 정보</a>"+
       "</nav>"+
       "<div class=hcall>"+
-        "<a class='hbtn call' href=\"tel:"+PHONE_TEL+"\">📞 전화</a>"+
+        "<a class='hbtn call' href=\"tel:"+PHONE_TEL+"\">📞 전화</a><span class='telt htel'>📞 "+PHONE+"</span>"+
         "<a class='hbtn sms' href=\"sms:"+PHONE_TEL+"\">💬 문자</a>"+
       "</div>"+
     "</div></div></header>"+ body +
@@ -1563,7 +1566,7 @@ function shell(o, body){
       "<p style=\"margin-top:18px;font-size:13px\">📞 "+telBtn("","전화 상담","style=\"color:var(--clay);font-weight:700\"")+" &nbsp; 💬 <a href=\"sms:"+PHONE_TEL+"\" style=\"color:var(--clay);font-weight:700\">문자 상담</a></p>"+
     "</div></footer>"+
     "<div class=floatbtns>"+
-      "<a class='fab fab-call' href=\"tel:"+PHONE_TEL+"\"><span class=fab-ic>📞</span><span class=fab-t>전화 상담</span></a>"+
+      "<a class='fab fab-call' href=\"tel:"+PHONE_TEL+"\"><span class=fab-ic>📞</span><span class=fab-t>전화 상담</span></a><span class='telt fabt'><span class=fab-ic>📞</span>"+PHONE+"</span>"+
       "<a class='fab fab-sms' href=\"sms:"+PHONE_TEL+"\"><span class=fab-ic>💬</span><span class=fab-t>문자 상담</span></a>"+
     "</div>"+
     "<script>"+TELBTN_JS+"</script>"+
