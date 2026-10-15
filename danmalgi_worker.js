@@ -1,3 +1,14 @@
+/* /og/<파일> — og 이미지 자체 서빙(2026-10-16): 자기 저장소 og/ → 허용 목록 → Cache API → GitHub raw → jsDelivr 폴백 → 1년 immutable */
+const OG_OK=/^([a-z0-9-]+\/)?[A-Za-z0-9._-]+\.(png|jpe?g|webp)$/;
+async function ogProxy(request,ctx,p){
+  if(!OG_OK.test(p)) return new Response("not found",{status:404});
+  const ext=p.split(".").pop().toLowerCase(); const ct=ext==="png"?"image/png":ext==="webp"?"image/webp":"image/jpeg";
+  const key=new Request("https://danmalgi.com/og/"+p+"?v=1",{method:"GET"}); const cache=(typeof caches!=="undefined"&&caches.default)?caches.default:null;
+  if(cache){ try{ const hit=await cache.match(key); if(hit) return hit; }catch(e){} }
+  const srcs=["https://raw.githubusercontent.com/dandylsk80/danmalgi/main/og/"+p,"https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/og/"+p];
+  for(let i=0;i<srcs.length;i++){ try{ const r=await fetch(srcs[i]); if(r.ok){ const body=await r.arrayBuffer(); const res=new Response(body,{headers:{"content-type":ct,"cache-control":"public, max-age=31536000, immutable","x-img-src":i?"jsd":"raw"}}); if(cache&&ctx&&ctx.waitUntil) ctx.waitUntil(cache.put(key,res.clone())); return res; } }catch(e){} }
+  return new Response("og image unavailable",{status:502});
+}
 /* ===== 한국어 조사 자동 판별 (받침 유무) — 13개 사이트 공통 =====
    J("강남동","은","는") -> "강남동은"   J("제주시","은","는") -> "제주시는"
    J(x,"으로","로") 은 ㄹ 받침도 처리한다. 한글이 아니면 받침 없음으로 본다. */
@@ -176,7 +187,7 @@ function telBtn(cls, label, attrs){
 
 const PHONE     = "010-9876-8282";               // 표시용 전화번호
 const PHONE_TEL = "01098768282";                 // tel/sms 링크용(숫자만)
-const OG_IMAGE  = "https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/og/og-default.png"; // 1200×630 PNG (카톡·네이버 미리보기 호환)
+const OG_IMAGE  = "https://danmalgi.com/og/og-default.png";   /* 2026-10-16 자체 서빙(/og/ 프록시) */ // 1200×630 PNG (카톡·네이버 미리보기 호환)
 const BRAND     = "단말기닷컴";
 // -------- 검색엔진 소유확인 (발급받은 'content' 값만 붙여넣기, 없으면 빈칸) --------
 const GOOGLE_VERIFY = "";   // Google Search Console (HTML 태그 방식)
@@ -194,7 +205,7 @@ const PHOTOS_D = ["pexels-christina99999-30413428.jpg","pexels-francesco-ungaro-
 function photoForD(seed){ if(!PHOTOS_D.length) return photoFor(seed); const i=((seed%PHOTOS_D.length)+PHOTOS_D.length)%PHOTOS_D.length; return IMG_BASE+"demo/"+encodeURIComponent(PHOTOS_D[i]); }
 function photoFor(seed){ if(!PHOTOS.length) return OG_IMAGE; const i=((seed%PHOTOS.length)+PHOTOS.length)%PHOTOS.length; return IMG_BASE+encodeURIComponent(PHOTOS[i]); }
 // og:image 용: image/ 사진 → og/ 의 같은 사진 1200×630 JPG 크롭본
-const OG_BASE = "https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/og/";
+const OG_BASE = "https://danmalgi.com/og/";
 function ogImg(u){ return (u && u.indexOf(IMG_BASE)===0) ? OG_BASE+u.slice(IMG_BASE.length) : (u||OG_IMAGE); }
 function heroBanner(img, ebHtml, h1text){
   return "<div class='hbann'>"+
@@ -2437,6 +2448,7 @@ export default {
 const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[b.type]){const tgp=tgNotify(env, b.type,(b.page||"/").slice(0,300),b.ref||"",ua, String(b.b || "").slice(0, 40), b.q||"");if(ctx&&ctx.waitUntil)ctx.waitUntil(tgp);else await tgp;}const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&!(b.type==="view"&&BOT_UA_RE.test(request.headers.get("User-Agent")||"")||(b.type==="view"&&skipViewCf(request, request.headers.get("CF-Connecting-IP")||"")))&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){const __ev=env.DB.prepare('INSERT INTO events (site,type,page,ref,ip,ts,ua,device,source,keyword) VALUES (?,?,?,?,?,?,?,?,?,?)').bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts,...tkMeta(request.headers.get('User-Agent')||'', b.ref||'', 'danmalgi.com', b.q||"")).run().catch(function(e){ console.log('[track] D1 insert fail', e&&e.message); }); if(ctx&&ctx.waitUntil) ctx.waitUntil(__ev); else await __ev;}}catch(e){ console.log('[track] fail', e&&e.message); } })(); if(ctx&&ctx.waitUntil) ctx.waitUntil(__task); else await __task; }catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
     if(path==="/api/track"&&request.method==="OPTIONS")return new Response(null,{headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
+    if(path.indexOf("/og/")===0) return ogProxy(request,ctx,path.slice(4));
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
     if(path==="/llms.txt") return resp(LLMS_TXT,"text/plain; charset=UTF-8");
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
