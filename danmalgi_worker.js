@@ -1,3 +1,15 @@
+/* /img/<파일> — 자기 저장소 image/ 사진 자체 서빙(2026-10-16): jsDelivr 간헐 503 대비. 허용 목록 → Cache API(IMG_VER) → GitHub raw → jsDelivr 폴백 → 1년 immutable */
+const IMG_VER="1";
+const IMG_OK=/^([A-Za-z0-9._-]+\/)?[A-Za-z0-9._-]+\.(jpe?g|png|webp|gif|svg)$/;
+async function imgProxy(request,ctx,p){
+  if(!IMG_OK.test(p)) return new Response("not found",{status:404});
+  const ext=p.split(".").pop().toLowerCase(); const ct=ext==="png"?"image/png":ext==="webp"?"image/webp":ext==="gif"?"image/gif":ext==="svg"?"image/svg+xml":"image/jpeg";
+  const key=new Request("https://danmalgi.com/img/"+p+"?v="+IMG_VER,{method:"GET"}); const cache=(typeof caches!=="undefined"&&caches.default)?caches.default:null;
+  if(cache){ try{ const hit=await cache.match(key); if(hit) return hit; }catch(e){} }
+  const srcs=["https://raw.githubusercontent.com/dandylsk80/danmalgi/main/image/"+p,"https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/image/"+p];
+  for(let i=0;i<srcs.length;i++){ try{ const r=await fetch(srcs[i]); if(r.ok){ const body=await r.arrayBuffer(); const res=new Response(body,{headers:{"content-type":ct,"cache-control":"public, max-age=31536000, immutable","x-img-src":i?"jsd":"raw"}}); if(cache&&ctx&&ctx.waitUntil) ctx.waitUntil(cache.put(key,res.clone())); return res; } }catch(e){} }
+  return new Response("image unavailable",{status:502});
+}
 /* /og/<파일> — og 이미지 자체 서빙(2026-10-16): 자기 저장소 og/ → 허용 목록 → Cache API → GitHub raw → jsDelivr 폴백 → 1년 immutable */
 const OG_OK=/^([a-z0-9-]+\/)?[A-Za-z0-9._-]+\.(png|jpe?g|webp)$/;
 async function ogProxy(request,ctx,p){
@@ -199,7 +211,7 @@ const GOOGLE_VERIFY_FILE = ""; // 파일 방식 쓸 때만, 예: "google1234abcd
 const INDEXNOW_KEY = "a7f3c1e9b2d84056f1a9c3e7b5d20496"; // IndexNow 키(임의 영숫자, 그대로 둬도 됨)
 // -------- 썸네일 사진 (깃허브 image 폴더를 jsDelivr CDN으로 제공) --------
 // ※ 사진이 안 뜨면 IMG_BASE만 본인 저장소에 맞게 고치세요.
-const IMG_BASE = "https://cdn.jsdelivr.net/gh/dandylsk80/danmalgi@main/image/";
+const IMG_BASE = "https://danmalgi.com/img/";   /* 2026-10-16 자체 서빙(/img/ 프록시) */
 const PHOTOS = ["pexels-419907350-37856472.jpg","pexels-anhdanghihi-20454105.jpg","pexels-anhdanghihi-20454106.jpg","pexels-b-o-minh-1883288-35228891.jpg","pexels-betul-341981540-32814268.jpg","pexels-charlotte-may-5946963.jpg","pexels-chipi1189-33964546.jpg","pexels-dung-ph-m-694024428-18405036.jpg","pexels-ekrulila-32416016.jpg","pexels-hexuye-ye-81431575-8784720.jpg","pexels-ketut-subiyanto-4349944.jpg","pexels-kevinbidwell-2323432.jpg","pexels-laotie-miao-523854977-16464587.jpg","pexels-mavicair2tw-29867234.jpg","pexels-minchephoto-6879450.jpg","pexels-mtyutina-5091144.jpg","pexels-nam-quan-nguy-n-459228913-16024411.jpg","pexels-nhi-tran-863971602-33618578.jpg","pexels-peterdanthy-34363536.jpg","pexels-rachel-claire-5531303.jpg","pexels-roopsarkar-32550034.jpg","pexels-roopsarkar-34517063.jpg","pexels-chipi1189-33964546.jpg","pexels-soc-nang-d-ng-2150345854-36433589.jpg","pexels-soc-nang-d-ng-2150345854-36649774.jpg","pexels-speedwagwon-35774245-11482921.jpg","pexels-toktak-phitsinee-19163808-8780450.jpg","pexels-vi-t-anh-nguy-n-2150409023-31133774.jpg","pexels-vi-t-anh-nguy-n-2150409023-33707727.jpg","pexels-voltfather-18235152.jpg","pexels-voltfather-18243122.jpg"];
 const PHOTOS_D = ["pexels-christina99999-30413428.jpg","pexels-francesco-ungaro-15798780.jpg","pexels-g-n-403098-29537620.jpg","pexels-iwashere-14840752.jpg","pexels-jplenio-1445324.jpg","pexels-kindelmedia-8488021.jpg","pexels-kindelmedia-8488037.jpg","pexels-mographe-15360461.jpg","pexels-nick-noyes-271794-19188877.jpg","pexels-noemiji-37663438.jpg","pexels-rezwan-1078884.jpg","pexels-sejio402-27134570.jpg","pexels-suntorn-somtong-386224-1029243.jpg","pexels-thirdman-5583614.jpg","pexels-tizzy-34965713.jpg"];
 function photoForD(seed){ if(!PHOTOS_D.length) return photoFor(seed); const i=((seed%PHOTOS_D.length)+PHOTOS_D.length)%PHOTOS_D.length; return IMG_BASE+"demo/"+encodeURIComponent(PHOTOS_D[i]); }
@@ -2448,6 +2460,7 @@ export default {
 const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[b.type]){const tgp=tgNotify(env, b.type,(b.page||"/").slice(0,300),b.ref||"",ua, String(b.b || "").slice(0, 40), b.q||"");if(ctx&&ctx.waitUntil)ctx.waitUntil(tgp);else await tgp;}const ip=request.headers.get("CF-Connecting-IP")||"";const ts=new Date().toISOString();if(env&&env.DB&&!(b.type==="view"&&BOT_UA_RE.test(request.headers.get("User-Agent")||"")||(b.type==="view"&&skipViewCf(request, request.headers.get("CF-Connecting-IP")||"")))&&(b.type==="tel"||b.type==="sms"||b.type==="contact"||b.type==="view")){const __ev=env.DB.prepare('INSERT INTO events (site,type,page,ref,ip,ts,ua,device,source,keyword) VALUES (?,?,?,?,?,?,?,?,?,?)').bind("danmalgi",b.type,(b.page||"").slice(0,300),(b.ref||"").slice(0,120),ip,ts,...tkMeta(request.headers.get('User-Agent')||'', b.ref||'', 'danmalgi.com', b.q||"")).run().catch(function(e){ console.log('[track] D1 insert fail', e&&e.message); }); if(ctx&&ctx.waitUntil) ctx.waitUntil(__ev); else await __ev;}}catch(e){ console.log('[track] fail', e&&e.message); } })(); if(ctx&&ctx.waitUntil) ctx.waitUntil(__task); else await __task; }catch(e){}return new Response(JSON.stringify({ok:true}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});}
     if(path==="/api/track"&&request.method==="OPTIONS")return new Response(null,{headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type"}});
     if(path==="/") return resp(homePage(),"text/html; charset=UTF-8");
+    if(path.indexOf("/img/")===0) return imgProxy(request,ctx,path.slice(5));
     if(path.indexOf("/og/")===0) return ogProxy(request,ctx,path.slice(4));
     if(path==="/robots.txt") return new Response(ROBOTS,{headers:{"content-type":"text/plain; charset=UTF-8","cache-control":"no-cache, no-store, max-age=0"}});
     if(path==="/llms.txt") return resp(LLMS_TXT,"text/plain; charset=UTF-8");
