@@ -2348,7 +2348,22 @@ async function indexnowDaily(env, source, dry, force){
       IN_DATES = dates; IN_DATES_AT = Date.now();
     } catch (e) {}
   }
+  /* 이번에 보낸 유형·새 글을 남긴다 — sites-tools index-submit 이 /api/indexnow-changed 로 받아 깃허브에서 bing.com/indexnow 로 다시 보낸다 */
+  const okTypes = changed.filter(t => next[t] === fp[t]);
+  if ((okTypes.length || fresh.length) && env && env.DB) {
+    try { await env.DB.prepare("INSERT INTO site_state (site,key,value,ts) VALUES (?,?,?,?) ON CONFLICT(site,key) DO UPDATE SET value=excluded.value, ts=excluded.ts")
+      .bind(IN_SITE, "in_last", JSON.stringify({ date: today, types: okTypes, fresh }), new Date().toISOString()).run(); } catch (e) {}
+  }
   return { plan, sent: res.map(r => r.out) };
+}
+/* 최근 days 일 안에 워커가 IndexNow 로 보낸 URL(바뀐 유형 전체 + 새 글). 공개 주소만 담기므로 키 없이 연다 */
+async function inChangedResp(request, env){
+  const days = Math.min(7, Math.max(1, parseInt(new URL(request.url).searchParams.get("days") || "1", 10) || 1));
+  let last = null; try { const r = env && env.DB ? await env.DB.prepare("SELECT value FROM site_state WHERE site=? AND key=?").bind(IN_SITE, "in_last").first() : null; if (r && r.value) last = JSON.parse(r.value); } catch (e) {}
+  const cutoff = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10);
+  let urls = [];
+  if (last && last.date >= cutoff) { const m = inUrls(); urls = (last.fresh || []).slice(); for (const t of last.types || []) if (m[t]) urls = urls.concat(m[t]); }
+  return new Response(JSON.stringify({ site: IN_SITE, date: last && last.date, days, types: last && last.date >= cutoff ? last.types : [], n: urls.length, urls }), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 }
 /* 사이트맵 전체 */
 function inAllLocs(){ return sitemapAll(); }
@@ -2517,6 +2532,7 @@ const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
     if(BING_VERIFY && path==="/BingSiteAuth.xml") return resp('<?xml version="1.0"?><users><user>'+BING_VERIFY+'</user></users>',"application/xml; charset=UTF-8");
     if(INDEXNOW_KEY && path==="/"+INDEXNOW_KEY+".txt") return resp(INDEXNOW_KEY,"text/plain; charset=UTF-8");
+    if(path==="/api/indexnow-changed") return inChangedResp(request,env);
     if(path==="/indexnow-submit"){
       if(url.searchParams.get("key")!==INDEXNOW_KEY) return new Response("forbidden",{status:403});
       const r=await indexnowDaily(env,"manual",url.searchParams.get("dry")==="1",url.searchParams.get("all")==="1");
