@@ -1974,8 +1974,10 @@ const XMLHEAD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
    한 번도 가져가지 않았다. 하위 생성 함수는 그대로 두고 여기서 합친다. */
 function sitemapAll(){
   const strip=function(x){ return x.slice(x.indexOf(">",x.indexOf("<urlset"))+1, x.lastIndexOf("</urlset>")); };
-  return XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"+
+  const xml=XMLHEAD+"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"+
     strip(sitemapMain())+strip(sitemapR())+strip(sitemapD())+"</urlset>";
+  /* lastmod 는 유형별 실제 변경일(inLastmod, 2026-10-27) — 예전엔 전 URL 오늘 날짜였다. 글은 실제 발행일 그대로 */
+  return xml.replace(/<loc>([^<]+)<\/loc><lastmod>[^<]*<\/lastmod>/g,function(m,l){ return l.indexOf("/post/")>=0?m:"<loc>"+l+"</loc><lastmod>"+inLastmod(l)+"</lastmod>"; });
 }
 function sitemapMain(){
   const today=isoDate(new Date());
@@ -2249,66 +2251,112 @@ const LLMS_TXT="# "+BRAND+" (danmalgi.com)\n\n"
 +"## 서비스 제공 주체\n- 상호: "+BRAND+"\n- 서비스: 카드단말기·포스 설치, 매장 원상복구 철거\n- 지역: 대한민국 전역(17개 시·도)\n\n"
 +"## 연락\n- 전화 및 문자: "+PHONE+"\n";
 
-// ---------- IndexNow (빙/얀덱스 등 즉시 색인 알림) ----------
-function allUrls(){
-  const urls=[SITE+"/", SITE+"/list", SITE+"/d"];
-  SIDOS.forEach(function(s){ const sl=SIDO_SLUGS[s]; if(sl) urls.push(SITE+"/sido/"+sl); });
-  for(const k in GUNGU_SLUGS) urls.push(SITE+"/sigungu/"+GUNGU_SLUGS[k]);
-  for(const r of REGIONS) urls.push(SITE+"/r/"+r.s);
-  for(const r of REGIONS) urls.push(SITE+"/d/"+r.s);
-  return urls;
+/* ── IndexNow: 사이트맵 URL 중 바뀐 유형만 + 새 글 (2026-10-27, allpaystore·24payshop 방식) ─────────
+   예전엔 매일 18일 주기 해시 회전(modifiedDate)으로 고른 700여 개를 "오늘 바뀐 페이지"처럼 보냈다(실제 변경과 무관).
+   ① 7일 내 새 글 ② 사이트맵 <loc> 를 경로 모양으로 유형을 나누고(inTypeKey), 유형별 대표 페이지 HTML 에서 날짜를 뗀
+      지문이 D1 site_state(site='danmalgi', key='in_fp') 저장값과 다르면 그 유형 URL 전부. 하루 1회(cron).
+   저장된 지문이 없으면(첫 실행) 전 유형 1회 전량. D1 읽기 실패면 새 글만. 바뀐 게 없으면 indexnow_log 에 'no-change'.
+   수동: /indexnow-submit?key=<KEY>[&dry=1][&all=1]  (dry 는 계획만 · all 은 지문 무시하고 전량) */
+const IN_SITE = "danmalgi", IN_HOST = "danmalgi.com", IN_ORIGIN = "https://danmalgi.com";
+function inUrls(){
+  const m = {};
+  for (const x of inAllLocs().matchAll(/<loc>([^<]+)<\/loc>/g)) { const u = x[1].replace(/&amp;/g, "&"); const t = inTypeKey(u); if (!t) continue; (m[t] = m[t] || []).push(u); }
+  for (const t in m) m[t] = [...new Set(m[t])];
+  return m;
 }
-function todaysUpdatedUrls(){
-  const td=isoDate(new Date());
-  const urls=[SITE+"/", SITE+"/list", SITE+"/d"];
-  SIDOS.forEach(function(s){ if(isoDate(modifiedDate(hash("sido:"+s)))===td){ const sl=SIDO_SLUGS[s]; if(sl) urls.push(SITE+"/sido/"+sl);} });
-  for(const k in GUNGU_SLUGS){ if(isoDate(modifiedDate(hash("gungu:"+k)))===td) urls.push(SITE+"/sigungu/"+GUNGU_SLUGS[k]); }
-  for(const r of REGIONS){ if(isoDate(modifiedDate(hash(r.s)))===td) urls.push(SITE+"/r/"+r.s); }
-  for(const r of REGIONS){ if(isoDate(modifiedDate(hash("d:"+r.s)))===td) urls.push(SITE+"/d/"+r.s); }
-  return urls;
+/* 날짜(ISO·한국식)만 떼고 해시 — lastmod·"YYYY년 M월 D일" 같은 날짜 때문에 지문이 매일 흔들리지 않게 */
+function inFingerprint(html){
+  const t = String(html || "").replace(/\d{4}-\d{2}-\d{2}(T[0-9:.]+Z?)?/g, "D").replace(/\d{4}\s*[.년]\s*\d{1,2}\s*[.월]\s*\d{1,2}\s*일?/g, "D");
+  let h1 = 5381, h2 = 0x811c9dc5;
+  for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); h1 = ((h1 << 5) + h1 + c) >>> 0; h2 = Math.imul(h2 ^ c, 16777619) >>> 0; }
+  return h1.toString(16) + h2.toString(16) + "-" + t.length;
 }
-// IndexNow 는 참여 엔드포인트 아무 곳에나 넣으면 나머지 엔진으로 전파된다.
-// api.indexnow.org / www.bing.com 은 Cloudflare Workers 의 공용 아웃바운드 IP 에
-// 429(TooManyRequests)를 주는 경우가 많아, 실패 시 다음 엔드포인트로 넘어간다.
-const INDEXNOW_ENDPOINTS = [
-  "https://api.indexnow.org/indexnow",
-  "https://yandex.com/indexnow",
-  "https://search.seznam.cz/indexnow"
-];
-/* 네이버는 IndexNow 참여 엔드포인트지만 위 폴백 체인에 넣으면 안 된다 — 체인은 한 곳이
-   200 을 주는 순간 멈추므로 yandex 가 먼저 성공하면 네이버로는 영영 안 간다.
-   같은 본문을 체인 밖에서 따로 보내고 status 를 따로 남긴다.
-   루트 URL 하나만 담긴 배치는 422 "Invalid urls" 지만 하위 경로가 섞이면 200 이다(2026-09-21 실측). */
-const INDEXNOW_NAVER_EP = "https://searchadvisor.naver.com/indexnow";
-async function indexnowNaver(body){
-  try{
-    const r=await fetch(INDEXNOW_NAVER_EP,{method:"POST",headers:{"content-type":"application/json; charset=utf-8"},body});
-    return r.status;
-  }catch(e){ return 0; }
+function logIndexnow(env, row){
+  try {
+    if (!env || !env.DB) return Promise.resolve();
+    return env.DB.prepare("INSERT INTO indexnow_log (site,ts,source,start_idx,count,status,endpoint,attempt,note) VALUES (?,?,?,?,?,?,?,?,?)")
+      .bind(IN_SITE, new Date().toISOString(), row.source || "", row.start | 0, row.count | 0, row.status | 0, String(row.ep || "").slice(0, 80), 1, String(row.note || "").slice(0, 200))
+      .run().catch(() => {});
+  } catch (e) { return Promise.resolve(); }
 }
-
-async function submitIndexNow(urls){
-  if(!INDEXNOW_KEY || !urls || !urls.length) return {sent:0,batches:0,failed:0,diag:[]};
-  const host=new URL(SITE).host, keyLocation=SITE+"/"+INDEXNOW_KEY+".txt";
-  let sent=0,batches=0,failed=0; const diag=[];
-  for(let i=0;i<urls.length;i+=1000){
-    const batch=urls.slice(i,i+1000); batches++;
-    const body=JSON.stringify({host:host,key:INDEXNOW_KEY,keyLocation:keyLocation,urlList:batch});
-    let ok=false;
-    for(const ep of INDEXNOW_ENDPOINTS){
-      try{
-        const r=await fetch(ep,{method:"POST",headers:{"Content-Type":"application/json; charset=utf-8"},body:body});
-        let rb=""; try{ rb=(await r.text()).slice(0,200); }catch(e2){}
-        diag.push({batch:batches,urls:batch.length,endpoint:ep,status:r.status,body:rb});
-        if(r.status>=200&&r.status<300){ ok=true; break; }
-      }catch(e){ diag.push({batch:batches,urls:batch.length,endpoint:ep,error:String(e)}); }
-    }
-    /* 네이버는 체인 밖에서 따로 보낸다 — 체인은 첫 200 에서 멈춘다 */
-    diag.push({batch:batches,urls:batch.length,endpoint:INDEXNOW_NAVER_EP,status:await indexnowNaver(body)});
-    if(ok) sent+=batch.length; else failed+=batch.length;
+/* 한 묶음(최대 10,000) 씩 네이버 + 폴백 체인(api.indexnow.org → yandex → seznam)에 보내고 indexnow_log 에 남긴다.
+   네이버는 체인 밖에서 따로 — 체인은 첫 200 에서 멈춘다 */
+const IN_EPS = ["https://api.indexnow.org/indexnow", "https://yandex.com/indexnow", "https://search.seznam.cz/indexnow"];
+async function inSubmit(env, urls, source, note){
+  const out = []; let ok = true;
+  for (let i = 0; i < urls.length; i += 10000) {
+    const batch = urls.slice(i, i + 10000);
+    const body = JSON.stringify({ host: IN_HOST, key: INDEXNOW_KEY, keyLocation: IN_ORIGIN + "/" + INDEXNOW_KEY + ".txt", urlList: batch });
+    const opt = { method: "POST", headers: { "content-type": "application/json; charset=utf-8" }, body };
+    let naver = 0, chain = 0, ep = "";
+    try { naver = (await fetch("https://searchadvisor.naver.com/indexnow", opt)).status; } catch (e) { naver = -1; }
+    for (const e of IN_EPS) { try { const r = await fetch(e, opt); chain = r.status; ep = e; if (r.status >= 200 && r.status < 300) break; } catch (x) {} }
+    const good = (naver >= 200 && naver < 300) || (chain >= 200 && chain < 300);
+    if (!good) ok = false;
+    out.push({ n: batch.length, naver, chain, ep: ep.replace(/^https?:\/\//, "").split("/")[0] });
+    await logIndexnow(env, { source, start: i, count: batch.length, status: chain, ep, note: "naver=" + naver + " " + note });
   }
-  return {sent:sent,batches:batches,failed:failed,diag:diag};
+  return { ok, out };
 }
+/* 유형별 "지문이 바뀐 날" — 사이트맵 lastmod 가 쓴다 (site_state key='in_fp_date'). 1시간 메모.
+   기록이 없는 유형은 SM_FALLBACK_DATE(이 방식 배포일) */
+const SM_FALLBACK_DATE = "2026-10-27";
+let IN_DATES = null, IN_DATES_AT = 0;
+async function loadInDates(env){
+  if (IN_DATES && Date.now() - IN_DATES_AT < 3600000) return IN_DATES;
+  let d = IN_DATES || {};
+  try { const r = env && env.DB ? await env.DB.prepare("SELECT value FROM site_state WHERE site=? AND key=?").bind(IN_SITE, "in_fp_date").first() : null; if (r && r.value) d = JSON.parse(r.value); } catch (e) {}
+  IN_DATES = d; IN_DATES_AT = Date.now(); return d;
+}
+function inLastmod(u){ const t = inTypeKey(u); return (t && IN_DATES && IN_DATES[t]) || SM_FALLBACK_DATE; }
+function inMaxDate(){ let m = SM_FALLBACK_DATE; for (const k in (IN_DATES || {})) if (IN_DATES[k] > m) m = IN_DATES[k]; return m; }
+async function indexnowDaily(env, source, dry, force){
+  try { await loadPosts(env); } catch (e) {}
+  const fresh = postFreshUrls(), types = inUrls();
+  const fp = {};
+  for (const t in types) { try { fp[t] = inFingerprint(await inSample(env, types[t][0])); } catch (e) { fp[t] = "err"; } }
+  let prev = null, dates = {};                      /* prev null = 저장된 지문 없음(첫 실행) · undefined = 읽기 실패 → 새 글만 */
+  try {
+    const r = env && env.DB ? await env.DB.prepare("SELECT value FROM site_state WHERE site=? AND key=?").bind(IN_SITE, "in_fp").first() : null;
+    if (r && r.value) prev = JSON.parse(r.value); else if (!env || !env.DB) prev = undefined;
+    const r2 = env && env.DB ? await env.DB.prepare("SELECT value FROM site_state WHERE site=? AND key=?").bind(IN_SITE, "in_fp_date").first() : null;
+    if (r2 && r2.value) dates = JSON.parse(r2.value);
+  } catch (e) { prev = undefined; }
+  let changed = [];
+  if (force) changed = Object.keys(fp).filter(t => fp[t] !== "err");
+  else if (prev !== undefined) for (const t in fp) if (fp[t] !== "err" && (!prev || prev[t] !== fp[t])) changed.push(t);
+  const plan = { site: IN_SITE, first: prev === null, force: !!force, fresh: fresh.length, changed, counts: {}, total: 0, errs: Object.keys(fp).filter(t => fp[t] === "err") };
+  for (const t of changed) { plan.counts[t] = types[t].length; plan.total += types[t].length; }
+  if (dry) return plan;
+  const res = [];
+  if (fresh.length) res.push(await inSubmit(env, fresh, source, "posts"));
+  const next = Object.assign({}, prev || {}), today = new Date().toISOString().slice(0, 10);
+  /* URL 이 적은 유형(100개 이하)은 한 묶음으로 합쳐 보낸다 — 루트 URL 하나만 담긴 배치는 네이버가 422 를 준다 */
+  const small = changed.filter(t => types[t].length <= 100), big = changed.filter(t => types[t].length > 100);
+  const mark = (ts, ok) => { if (!ok) return; for (const t of ts) { if (!prev || prev[t] !== fp[t]) dates[t] = today; next[t] = fp[t]; } };
+  if (small.length) {
+    let urls = []; for (const t of small) urls = urls.concat(types[t]);
+    if (urls.length === 1 && /^https?:\/\/[^/]+\/?$/.test(urls[0])) urls.push(IN_ORIGIN + "/list");
+    const r = await inSubmit(env, urls, source, "types=" + small.join(",")); res.push(r); mark(small, r.ok);
+  }
+  for (const t of big) { const r = await inSubmit(env, types[t], source, "type=" + t); res.push(r); mark([t], r.ok); }
+  if (!fresh.length && !changed.length) await logIndexnow(env, { source, start: 0, count: 0, status: 0, ep: "", note: "no-change" });
+  if (changed.length && env && env.DB) {
+    try {
+      const ts = new Date().toISOString(), q = "INSERT INTO site_state (site,key,value,ts) VALUES (?,?,?,?) ON CONFLICT(site,key) DO UPDATE SET value=excluded.value, ts=excluded.ts";
+      await env.DB.batch([env.DB.prepare(q).bind(IN_SITE, "in_fp", JSON.stringify(next), ts), env.DB.prepare(q).bind(IN_SITE, "in_fp_date", JSON.stringify(dates), ts)]);
+      IN_DATES = dates; IN_DATES_AT = Date.now();
+    } catch (e) {}
+  }
+  return { plan, sent: res.map(r => r.out) };
+}
+/* 사이트맵 전체 */
+function inAllLocs(){ return sitemapAll(); }
+/* 유형 = 첫 단 + 깊이 (/sido/x, /sigungu/x, /r/x, /d/x …). 글(/post)은 새 글 경로로 따로 */
+function inTypeKey(u){ let p = "/"; try { p = new URL(u).pathname; } catch (e) {} const seg = p.split("/").filter(Boolean);
+  if (!seg.length) return "home"; if (seg[0] === "post") return null; return seg[0] + ":" + seg.length; }
+/* 대표 페이지는 워커 자신의 fetch 핸들러를 안에서 불러 렌더한다(네트워크 왕복 없음) */
+async function inSample(env, u){ const r = await DM.fetch(new Request(u), env, { waitUntil(){}, passThroughOnException(){} }); return r.status + ":" + (await r.text()); }
 
 const FAVICON_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="#b1342f"/><rect x="3.5" y="3.5" width="41" height="41" rx="8" fill="none" stroke="#f4ece0" stroke-opacity="0.5" stroke-width="1.6"/><text x="24" y="26" text-anchor="middle" dominant-baseline="central" font-family="'Nanum Myeongjo','Gowun Batang',serif" font-weight="800" font-size="30" fill="#f6efe2">端</text></svg>`;
 const FAVICON_ICO_B64="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";
@@ -2447,10 +2495,12 @@ function blockScraper(request){
   return null;
 }
 
-export default {
+const DM = {
   async fetch(request, env, ctx){
     const __blk = blockScraper(request); if(__blk) return __blk;
     const url=new URL(request.url);
+    /* http·www 변형은 https 비www 로 301 (2026-10-27) */
+    if(/(^|\.)danmalgi\.com$/.test(url.hostname)&&(url.protocol==="http:"||url.hostname!=="danmalgi.com")) return Response.redirect(SITE+url.pathname+url.search,301);
     let path=decodeURIComponent(url.pathname);
     if(path==="/api/track"&&request.method==="POST"){try{const b=await request.json(); const __task=(async()=>{ try{
     /* 같은 방문자가 같은 버튼을 반복해 눌러도 1건만 기록·발송한다 */
@@ -2467,13 +2517,10 @@ const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[
     if(GOOGLE_VERIFY_FILE && path==="/"+GOOGLE_VERIFY_FILE) return resp("google-site-verification: "+GOOGLE_VERIFY_FILE,"text/plain; charset=UTF-8");
     if(BING_VERIFY && path==="/BingSiteAuth.xml") return resp('<?xml version="1.0"?><users><user>'+BING_VERIFY+'</user></users>',"application/xml; charset=UTF-8");
     if(INDEXNOW_KEY && path==="/"+INDEXNOW_KEY+".txt") return resp(INDEXNOW_KEY,"text/plain; charset=UTF-8");
-    if(path==="/indexnow/today"||path==="/indexnow/all"){
+    if(path==="/indexnow-submit"){
       if(url.searchParams.get("key")!==INDEXNOW_KEY) return new Response("forbidden",{status:403});
-      const urls=path.endsWith("/all")?allUrls():todaysUpdatedUrls();
-      const res=await submitIndexNow(urls);
-      const out={requested:urls.length,sent:res.sent,failed:res.failed,batches:res.batches};
-      if(url.searchParams.get("debug")==="1") out.diag=res.diag;
-      return new Response(JSON.stringify(out),{headers:{"content-type":"application/json; charset=UTF-8"}});
+      const r=await indexnowDaily(env,"manual",url.searchParams.get("dry")==="1",url.searchParams.get("all")==="1");
+      return new Response(JSON.stringify(r,null,1),{headers:{"content-type":"application/json; charset=UTF-8","cache-control":"no-store"}});
     }
     /* 정보성 글 — 지역 슬러그 판정보다 앞에 둔다 */
     if(path==="/post"||path==="/post/"){ return resp(pagePostList(await loadPosts(env)),"text/html; charset=UTF-8"); }
@@ -2483,7 +2530,7 @@ const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[
       return new Response(notFound(),{status:404,headers:{"content-type":"text/html; charset=UTF-8"}});
     }
     /* 사이트맵·RSS 생성 함수는 동기라 POSTS_CACHE 를 먼저 채워 준다 */
-    if(path.startsWith("/sitemap")||path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed"||path==="/atom.xml"||path==="/atom") await loadPosts(env);
+    if(path.startsWith("/sitemap")||path==="/rss.xml"||path==="/feed.xml"||path==="/rss"||path==="/feed"||path==="/atom.xml"||path==="/atom"){ await loadPosts(env); await loadInDates(env); }
     if(path==="/sitemap.xml") return resp(sitemapAll(),"application/xml; charset=UTF-8",{"cache-control":"public, max-age=3600"});
     /* 옛 하위 사이트맵 주소 — 서치어드바이저·서치콘솔에 등록된 채로 남아 있을 수 있어 본 사이트맵으로 넘긴다 */
     if(path==="/sitemap-main.xml") return Response.redirect(SITE+"/sitemap.xml",301);
@@ -2527,7 +2574,8 @@ const ua=request.headers.get("User-Agent")||"";if(!TG_BOT_RE.test(ua)&&TG_LABEL[
   },
   async scheduled(event,env,ctx){
     try{ POSTS_CACHE.at=0; await loadPosts(env); }catch(e){}
-    /* 최근 7일 안에 발행된 글은 배치 앞에 실어 색인을 앞당긴다 */
-    ctx.waitUntil(submitIndexNow(postFreshUrls().concat(todaysUpdatedUrls())));
+    /* 사이트맵 URL 중 바뀐 유형 + 7일 내 새 글만 */
+    ctx.waitUntil(indexnowDaily(env,"cron",false,false).then(function(r){ console.log("[CRON IndexNow]",JSON.stringify(r&&r.plan)); }).catch(function(e){ console.log("[CRON IndexNow] ERROR",e&&e.message); }));
   }
 };
+export default DM;
