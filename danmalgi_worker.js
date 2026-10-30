@@ -2289,7 +2289,7 @@ async function inSubmit(env, urls, source, note){
     const body = JSON.stringify({ host: IN_HOST, key: INDEXNOW_KEY, keyLocation: IN_ORIGIN + "/" + INDEXNOW_KEY + ".txt", urlList: batch });
     const opt = { method: "POST", headers: { "content-type": "application/json; charset=utf-8" }, body };
     let naver = 0, chain = 0, ep = "";
-    try { naver = (await fetch("https://searchadvisor.naver.com/indexnow", opt)).status; } catch (e) { naver = -1; }
+    try { naver = "off" /* 2026-10-30 네이버 IndexNow 중단 — 새 글만 allcarestudy 크론이 보낸다 */; } catch (e) { naver = -1; }
     for (const e of IN_EPS) { try { const r = await fetch(e, opt); chain = r.status; ep = e; if (r.status >= 200 && r.status < 300) break; } catch (x) {} }
     const good = (naver >= 200 && naver < 300) || (chain >= 200 && chain < 300);
     if (!good) ok = false;
